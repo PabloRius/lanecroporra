@@ -82,26 +82,25 @@ html {
   --font-serif: ${playfair.variable};
 }
         `}</style>
-        <head>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "WebSite",
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "La Necroporra",
+              url: "https://lanecrporra.com",
+              description:
+                "Únete al reto viral de España. Crea tu lista de famosos y compite con tus amigos en La Necroporra.",
+              publisher: {
+                "@type": "Organization",
                 name: "La Necroporra",
-                url: "https://lanecrporra.com",
-                description:
-                  "Únete al reto viral de España. Crea tu lista de famosos y compite con tus amigos en La Necroporra.",
-                publisher: {
-                  "@type": "Organization",
-                  name: "La Necroporra",
-                  logo: "https://lanecrporra.com/logo.png",
-                },
-              }),
-            }}
-          />
-        </head>
+                logo: "https://lanecrporra.com/logo.png",
+              },
+            }),
+          }}
+        />
       </head>
       <body
         className={
