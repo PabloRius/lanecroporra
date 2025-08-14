@@ -1,6 +1,7 @@
 import { FloatingMenu } from "@/components/floating-menu";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/providers/auth-provider";
+import { Analytics } from "@vercel/analytics/next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
@@ -26,10 +27,7 @@ export const metadata: Metadata = {
     "Competencia",
     "Apuestas divertidas",
   ],
-  authors: [
-    { name: "Pablo Garcia Rius", url: "https://pablogrius.com" },
-    // { name: "La Necroporra", url: "https://lanecrporra.com" },
-  ],
+  authors: [{ name: "Pablo Garcia Rius", url: "https://pablogrius.com" }],
   metadataBase: new URL("https://lanecrporra.com"),
   openGraph: {
     title: "La Necroporra - El Reto Anual más Controvertido",
@@ -39,7 +37,7 @@ export const metadata: Metadata = {
     siteName: "La Necroporra",
     images: [
       {
-        url: "/logo.png",
+        url: "/logo.png", // must exist in /public
         width: 512,
         height: 512,
         alt: "Logo de La Necroporra",
@@ -56,14 +54,13 @@ export const metadata: Metadata = {
     images: ["/logo.png"],
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/logo.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/logo.png", sizes: "180x180", type: "image/png" }],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
   themeColor: "#ffffff",
 };
 
@@ -85,6 +82,26 @@ html {
   --font-serif: ${playfair.variable};
 }
         `}</style>
+        <head>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                name: "La Necroporra",
+                url: "https://lanecrporra.com",
+                description:
+                  "Únete al reto viral de España. Crea tu lista de famosos y compite con tus amigos en La Necroporra.",
+                publisher: {
+                  "@type": "Organization",
+                  name: "La Necroporra",
+                  logo: "https://lanecrporra.com/logo.png",
+                },
+              }),
+            }}
+          />
+        </head>
       </head>
       <body
         className={
@@ -103,6 +120,7 @@ html {
             <FloatingMenu />
           </ThemeProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
