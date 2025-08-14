@@ -2,11 +2,19 @@
 
 import { AuthCard } from "@/components/auth-card";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/providers/auth-provider";
 import { ArrowLeft } from "lucide-react";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export default function LoginPage() {
+  const { currentUser } = useAuth();
+
+  if (currentUser) {
+    redirect("/dashboard");
+  }
+
   return (
     <main className="container max-w-md mx-auto px-4 py-8 sm:px-6 lg:px-8">
       {/* Back Button */}
