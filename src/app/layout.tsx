@@ -28,12 +28,12 @@ export const metadata: Metadata = {
     "Apuestas divertidas",
   ],
   authors: [{ name: "Pablo Garcia Rius", url: "https://pablogrius.com" }],
-  metadataBase: new URL("https://lanecrporra.com"),
+  metadataBase: new URL("https://lanecroporra.com"),
   openGraph: {
     title: "La Necroporra - El Reto Anual más Controvertido",
     description:
       "Únete al reto viral de España. Crea tu lista de famosos y compite con tus amigos en La Necroporra.",
-    url: "https://lanecrporra.com",
+    url: "https://lanecroporra.com",
     siteName: "La Necroporra",
     images: [
       {
@@ -90,13 +90,13 @@ html {
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: "La Necroporra",
-              url: "https://lanecrporra.com",
+              url: "https://lanecroporra.com",
               description:
                 "Únete al reto viral de España. Crea tu lista de famosos y compite con tus amigos en La Necroporra.",
               publisher: {
                 "@type": "Organization",
                 name: "La Necroporra",
-                logo: "https://lanecrporra.com/logo.png",
+                logo: "https://lanecroporra.com/logo.png",
               },
             }),
           }}
