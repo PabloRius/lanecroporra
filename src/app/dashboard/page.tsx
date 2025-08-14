@@ -25,10 +25,12 @@ import {
   Calendar,
   Crown,
   Hash,
+  Menu,
   Plus,
   Trophy,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -75,13 +77,44 @@ export default function Dashboard() {
   >(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const handleGroupSelect = (group: (typeof mockGroups)[0]) => {
+    setSelectedGroup(group);
+    setIsSidebarOpen(false); // Close sidebar on mobile after selection
+  };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background relative">
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Left Sidebar - Groups List */}
-      <div className="w-80 border-r border-border bg-card">
+      <div
+        className={`
+        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        lg:translate-x-0 transition-transform duration-300 ease-in-out
+        fixed lg:relative z-50 lg:z-auto
+        w-full sm:w-80 lg:w-80 h-full
+        border-r border-border bg-card
+      `}
+      >
         <div className="p-4 border-b border-border">
-          <h1 className="text-xl font-bold mb-4">Mis Grupos</h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl font-bold">Mis Grupos</h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
@@ -164,7 +197,7 @@ export default function Dashboard() {
               className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${
                 selectedGroup?.id === group.id ? "bg-muted" : ""
               }`}
-              onClick={() => setSelectedGroup(group)}
+              onClick={() => handleGroupSelect(group)}
             >
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-semibold text-sm truncate flex-1">
@@ -195,32 +228,45 @@ export default function Dashboard() {
       </div>
 
       {/* Right Panel - Group Details */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {selectedGroup ? (
           <>
+            <div className="lg:hidden p-4 border-b border-border bg-card flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <Menu className="w-4 h-4" />
+              </Button>
+              <h2 className="font-semibold truncate">{selectedGroup.name}</h2>
+            </div>
+
             {/* Group Header */}
-            <div className="p-6 border-b border-border bg-card">
+            <div className="p-4 lg:p-6 border-b border-border bg-card">
               <div className="flex items-start justify-between mb-4">
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <h2 className="text-2xl font-bold">{selectedGroup.name}</h2>
+                    <h2 className="text-xl lg:text-2xl font-bold truncate">
+                      {selectedGroup.name}
+                    </h2>
                     {selectedGroup.isCreator && (
-                      <Crown className="w-5 h-5 text-yellow-500" />
+                      <Crown className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                     )}
                   </div>
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground text-sm lg:text-base">
                     {selectedGroup.description}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground ml-4 flex-shrink-0">
                   <Hash className="w-4 h-4" />
-                  {selectedGroup.code}
+                  <span className="hidden sm:inline">{selectedGroup.code}</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
                 <Card>
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 lg:p-4">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-muted-foreground" />
                       <div>
@@ -236,7 +282,7 @@ export default function Dashboard() {
                 </Card>
 
                 <Card>
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 lg:p-4">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
                       <div>
@@ -249,8 +295,8 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardContent className="p-4">
+                <Card className="sm:col-span-2 lg:col-span-1">
+                  <CardContent className="p-3 lg:p-4">
                     <div className="flex items-center gap-2">
                       <Trophy className="w-4 h-4 text-muted-foreground" />
                       <div>
@@ -268,14 +314,14 @@ export default function Dashboard() {
             </div>
 
             {/* Group Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
-              <div className="grid gap-6">
+            <div className="flex-1 p-4 lg:p-6 overflow-y-auto">
+              <div className="grid gap-4 lg:gap-6">
                 {/* My List Section */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      Mi Lista
-                      <Button size="sm">
+                  <CardHeader className="pb-3 lg:pb-6">
+                    <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <span>Mi Lista</span>
+                      <Button size="sm" className="w-full sm:w-auto">
                         {selectedGroup.status === "active"
                           ? "Editar Lista"
                           : "Ver Lista"}
@@ -286,10 +332,14 @@ export default function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>Aún no has creado tu lista</p>
-                      <p className="text-sm">Tienes hasta el 31 de diciembre</p>
+                    <div className="text-center py-6 lg:py-8 text-muted-foreground">
+                      <Trophy className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-sm lg:text-base">
+                        Aún no has creado tu lista
+                      </p>
+                      <p className="text-xs lg:text-sm">
+                        Tienes hasta el 31 de diciembre
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -297,13 +347,15 @@ export default function Dashboard() {
                 {/* Leaderboard Section */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Clasificación Actual</CardTitle>
+                    <CardTitle className="text-lg lg:text-xl">
+                      Clasificación Actual
+                    </CardTitle>
                     <CardDescription>
                       Puntuación de todos los miembros del grupo
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
+                    <div className="space-y-3 lg:space-y-4">
                       {[
                         { name: "Carlos M.", points: 15, position: 1 },
                         { name: "Ana L.", points: 12, position: 2 },
@@ -315,19 +367,21 @@ export default function Dashboard() {
                           className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold">
+                            <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold">
                               {player.position}
                             </div>
                             <span
-                              className={
+                              className={`text-sm lg:text-base ${
                                 player.name === "Tú" ? "font-semibold" : ""
-                              }
+                              }`}
                             >
                               {player.name}
                             </span>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold">{player.points} pts</p>
+                            <p className="font-semibold text-sm lg:text-base">
+                              {player.points} pts
+                            </p>
                           </div>
                         </div>
                       ))}
@@ -338,23 +392,27 @@ export default function Dashboard() {
                 {/* Recent Activity */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Actividad Reciente</CardTitle>
+                    <CardTitle className="text-lg lg:text-xl">
+                      Actividad Reciente
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3 text-sm">
-                      <div className="flex justify-between items-center py-2 border-b border-border">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1">
                         <span>Carlos M. actualizó su lista</span>
-                        <span className="text-muted-foreground">
+                        <span className="text-muted-foreground text-xs sm:text-sm">
                           Hace 2 horas
                         </span>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b border-border">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1">
                         <span>Ana L. se unió al grupo</span>
-                        <span className="text-muted-foreground">Ayer</span>
+                        <span className="text-muted-foreground text-xs sm:text-sm">
+                          Ayer
+                        </span>
                       </div>
-                      <div className="flex justify-between items-center py-2">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 gap-1">
                         <span>Grupo creado</span>
-                        <span className="text-muted-foreground">
+                        <span className="text-muted-foreground text-xs sm:text-sm">
                           Hace 3 días
                         </span>
                       </div>
@@ -366,16 +424,38 @@ export default function Dashboard() {
           </>
         ) : (
           /* Empty State */
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold mb-2">
-                Selecciona un grupo
-              </h3>
-              <p>
-                Elige un grupo de la lista para ver su información y gestionar
-                tus listas
-              </p>
+          <div className="flex-1 flex flex-col">
+            <div className="lg:hidden p-4 border-b border-border bg-card">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSidebarOpen(true)}
+                className="w-full justify-start"
+              >
+                <Menu className="w-4 h-4 mr-2" />
+                Seleccionar Grupo
+              </Button>
+            </div>
+
+            <div className="flex-1 flex items-center justify-center p-4">
+              <div className="text-center text-muted-foreground max-w-sm">
+                <Users className="w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">
+                  Selecciona un grupo
+                </h3>
+                <p className="text-sm lg:text-base">
+                  Elige un grupo de la lista para ver su información y gestionar
+                  tus listas
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4 lg:hidden bg-transparent"
+                  onClick={() => setIsSidebarOpen(true)}
+                >
+                  <Menu className="w-4 h-4 mr-2" />
+                  Ver Grupos
+                </Button>
+              </div>
             </div>
           </div>
         )}
