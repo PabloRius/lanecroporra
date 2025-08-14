@@ -32,7 +32,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // Mock data for groups
 const mockGroups = [
@@ -45,6 +45,7 @@ const mockGroups = [
     deadline: "2024-12-31",
     status: "active",
     totalBets: 12,
+    listsSent: 6,
     description: "Grupo de amigos del barrio para la necroporra 2024",
   },
   {
@@ -56,6 +57,7 @@ const mockGroups = [
     deadline: "2024-12-31",
     status: "active",
     totalBets: 23,
+    listsSent: 12,
     description: "Compañeros de trabajo - oficina central",
   },
   {
@@ -67,9 +69,26 @@ const mockGroups = [
     deadline: "2024-12-31",
     status: "completed",
     totalBets: 8,
+    listsSent: 6,
     description: "Antiguos compañeros de universidad",
   },
 ];
+
+const calculateTimeLeft = (deadline: string) => {
+  const now = new Date();
+  const deadlineDate = new Date(deadline);
+  const timeDiff = deadlineDate.getTime() - now.getTime();
+
+  if (timeDiff <= 0) {
+    return { months: 0, days: 0, expired: true };
+  }
+
+  const days = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+  const months = Math.floor(days / 30);
+  const remainingDays = days % 30;
+
+  return { months, days: remainingDays, expired: false };
+};
 
 export default function Dashboard() {
   const [selectedGroup, setSelectedGroup] = useState<
@@ -78,6 +97,24 @@ export default function Dashboard() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<{
+    months: number;
+    days: number;
+    expired: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (selectedGroup) {
+      const updateCountdown = () => {
+        setTimeLeft(calculateTimeLeft(selectedGroup.deadline));
+      };
+
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 3600000); // Update every hour
+
+      return () => clearInterval(interval);
+    }
+  }, [selectedGroup]);
 
   const handleGroupSelect = (group: (typeof mockGroups)[0]) => {
     setSelectedGroup(group);
@@ -228,7 +265,7 @@ export default function Dashboard() {
       </div>
 
       {/* Right Panel - Group Details */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="relative flex-1 flex flex-col min-w-0">
         {selectedGroup ? (
           <>
             <div className="lg:hidden p-4 border-b border-border bg-card flex items-center gap-3">
@@ -242,31 +279,89 @@ export default function Dashboard() {
               <h2 className="font-semibold truncate">{selectedGroup.name}</h2>
             </div>
 
-            {/* Group Header */}
-            <div className="p-4 lg:p-6 border-b border-border bg-card">
+            <div className="lg:hidden  left-0 right-0 z-30 bg-card border-b border-border p-3">
+              <div className="grid grid-cols-3 gap-2">
+                <Card className="shadow-none border-muted">
+                  <CardContent className="p-2 text-center">
+                    <div className="flex flex-col items-center">
+                      <Users className="w-3 h-3 text-muted-foreground mb-1" />
+                      <p className="text-xs font-medium">
+                        {selectedGroup.members}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        miembros
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-none border-muted">
+                  <CardContent className="p-2 text-center">
+                    <div className="flex flex-col items-center">
+                      <Calendar className="w-3 h-3 text-muted-foreground mb-1" />
+                      {timeLeft && !timeLeft.expired ? (
+                        <>
+                          <p className="text-xs font-medium">
+                            {timeLeft.months}m {timeLeft.days}d
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            restantes
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-xs font-medium text-red-500">
+                            Expirado
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            fecha límite
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-none border-muted">
+                  <CardContent className="p-2 text-center">
+                    <div className="flex flex-col items-center">
+                      <Trophy className="w-3 h-3 text-muted-foreground mb-1" />
+                      <p className="text-xs font-medium">
+                        {selectedGroup.listsSent}/{selectedGroup.members}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        listas
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div className="hidden lg:block p-6 border-b border-border bg-card">
               <div className="flex items-start justify-between mb-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <h2 className="text-xl lg:text-2xl font-bold truncate">
+                    <h2 className="text-2xl font-bold truncate">
                       {selectedGroup.name}
                     </h2>
                     {selectedGroup.isCreator && (
                       <Crown className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                     )}
                   </div>
-                  <p className="text-muted-foreground text-sm lg:text-base">
+                  <p className="text-muted-foreground">
                     {selectedGroup.description}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground ml-4 flex-shrink-0">
                   <Hash className="w-4 h-4" />
-                  <span className="hidden sm:inline">{selectedGroup.code}</span>
+                  <span>{selectedGroup.code}</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Card>
-                  <CardContent className="p-3 lg:p-4">
+                  <CardContent className="p-4">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-muted-foreground" />
                       <div>
@@ -282,26 +377,42 @@ export default function Dashboard() {
                 </Card>
 
                 <Card>
-                  <CardContent className="p-3 lg:p-4">
+                  <CardContent className="p-4">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
                       <div>
-                        <p className="text-sm font-medium">31 Dic 2024</p>
-                        <p className="text-xs text-muted-foreground">
-                          Fecha límite
-                        </p>
+                        {timeLeft && !timeLeft.expired ? (
+                          <>
+                            <p className="text-sm font-medium">
+                              {timeLeft.months} meses, {timeLeft.days} días
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Tiempo restante
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-medium text-red-500">
+                              Expirado
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Fecha límite
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="sm:col-span-2 lg:col-span-1">
-                  <CardContent className="p-3 lg:p-4">
+                <Card>
+                  <CardContent className="p-4">
                     <div className="flex items-center gap-2">
                       <Trophy className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {selectedGroup.totalBets} Listas
+                          {selectedGroup.listsSent}/{selectedGroup.members}{" "}
+                          Listas
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Enviadas
@@ -313,8 +424,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Group Content */}
-            <div className="flex-1 p-4 lg:p-6 overflow-y-auto">
+            <div className="flex-1 p-4 lg:p-6 overflow-y-auto lg:pt-6 ">
               <div className="grid gap-4 lg:gap-6">
                 {/* My List Section */}
                 <Card>
