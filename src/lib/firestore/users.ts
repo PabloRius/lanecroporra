@@ -1,12 +1,18 @@
 import { UserDoc } from "@/models/User";
 import { User } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { db } from "../firebase/clientApp";
 
 export async function getUserById(uid: string): Promise<UserDoc | null> {
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
-  return userSnap.exists() ? (userSnap.data() as UserDoc) : null;
+  const data = userSnap.data();
+  return userSnap.exists()
+    ? ({
+        ...data,
+        createdAt: (data?.createdAt as Timestamp).toDate(),
+      } as UserDoc)
+    : null;
 }
 
 export async function createUser(authUser: User) {

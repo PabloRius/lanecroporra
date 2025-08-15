@@ -12,22 +12,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { getUserById } from "@/lib/firestore/users";
+import { UserDoc } from "@/models/User";
 import {
   ArrowLeft,
   Award,
   Calendar,
+  Loader2,
   Target,
   TrendingUp,
   Trophy,
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const userData = {
-  name: "Juan Pérez",
-  email: "juan.perez@email.com",
   avatar: "/diverse-user-avatars.png",
-  joinDate: "Enero 2024",
   stats: {
     totalPoints: 1250,
     gamesWon: 3,
@@ -79,6 +81,34 @@ const userData = {
 
 export default function ProfilePage() {
   const { currentUser, loading } = useAuth();
+  const [user, setUser] = useState<UserDoc | undefined | null>(undefined);
+
+  useEffect(() => {
+    if (currentUser && !loading) {
+      const fetchUser = async () => {
+        const userData = await getUserById(currentUser.uid);
+        if (!userData) {
+          console.error("User not found");
+          setUser(null);
+          return;
+        }
+        setUser(userData);
+      };
+      fetchUser();
+    }
+  }, [currentUser, loading]);
+
+  if (loading || user === undefined) {
+    return (
+      <div className="flex flex-1 w-full items-center justify-center">
+        <Loader2 size={32} className="animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    redirect("/login");
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -86,7 +116,7 @@ export default function ProfilePage() {
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Link href="/">
+            <Link href="/dashboard">
               <Button variant="ghost" size="icon">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -108,10 +138,14 @@ export default function ProfilePage() {
                 <div className="mx-auto h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
                   <Users className="h-12 w-12 text-muted-foreground" />
                 </div>
-                <CardTitle className="font-serif">{userData.name}</CardTitle>
-                <CardDescription>{userData.email}</CardDescription>
+                <CardTitle className="font-serif">{user.displayName}</CardTitle>
+                <CardDescription>{user.email}</CardDescription>
                 <Badge variant="secondary" className="mt-2">
-                  Miembro desde {userData.joinDate}
+                  Miembro desde{" "}
+                  {user.createdAt.toLocaleDateString("es-ES", {
+                    month: "long",
+                    year: "numeric",
+                  })}
                 </Badge>
               </CardHeader>
               <CardContent className="space-y-4">
