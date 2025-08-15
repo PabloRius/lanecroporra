@@ -21,63 +21,30 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Calendar,
-  Crown,
-  Hash,
-  Menu,
-  Plus,
-  Trophy,
-  UserPlus,
-  Users,
-  X,
-} from "lucide-react";
+import { getGroupById } from "@/lib/firestore/groups";
+import { getUserById } from "@/lib/firestore/users";
+import { GroupDoc } from "@/models/Group";
+import { UserDoc } from "@/models/User";
+import { useAuth } from "@/providers/auth-provider";
+import { Calendar, Menu, Plus, Trophy, UserPlus, Users, X } from "lucide-react";
+import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 
 // Mock data for groups
-const mockGroups = [
-  {
-    id: 1,
-    name: "Amigos del Barrio 2024",
-    code: "AMG2024",
-    isCreator: true,
-    members: 8,
-    deadline: "2024-12-31",
-    status: "active",
-    totalBets: 12,
-    listsSent: 6,
-    description: "Grupo de amigos del barrio para la necroporra 2024",
-  },
-  {
-    id: 2,
-    name: "Oficina Central",
-    code: "OFC2024",
-    isCreator: false,
-    members: 15,
-    deadline: "2024-12-31",
-    status: "active",
-    totalBets: 23,
-    listsSent: 12,
-    description: "Compañeros de trabajo - oficina central",
-  },
-  {
-    id: 3,
-    name: "Universidad Nostálgicos",
-    code: "UNI2024",
-    isCreator: false,
-    members: 6,
-    deadline: "2024-12-31",
-    status: "completed",
-    totalBets: 8,
-    listsSent: 6,
-    description: "Antiguos compañeros de universidad",
-  },
-];
+const mockGroup: GroupDoc = {
+  id: "ab1",
+  name: "Amigos del Barrio 2024",
+  creatorId: "user123",
+  members: [],
+  deadline: new Date("2024-12-31"),
+  status: "activo",
+  lists: [],
+  description: "Grupo de amigos del barrio para la necroporra 2024",
+};
 
-const calculateTimeLeft = (deadline: string) => {
+const calculateTimeLeft = (deadline: Date) => {
   const now = new Date();
-  const deadlineDate = new Date(deadline);
-  const timeDiff = deadlineDate.getTime() - now.getTime();
+  const timeDiff = deadline.getTime() - now.getTime();
 
   if (timeDiff <= 0) {
     return { months: 0, days: 0, expired: true };
@@ -91,9 +58,11 @@ const calculateTimeLeft = (deadline: string) => {
 };
 
 export default function Dashboard() {
-  const [selectedGroup, setSelectedGroup] = useState<
-    (typeof mockGroups)[0] | null
-  >(null);
+  const { currentUser, loading } = useAuth();
+  const [user, setUser] = useState<UserDoc | undefined | null>(undefined);
+  const [groups, setGroups] = useState<GroupDoc[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<GroupDoc | null>(null);
+
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -110,16 +79,54 @@ export default function Dashboard() {
       };
 
       updateCountdown();
-      const interval = setInterval(updateCountdown, 3600000); // Update every hour
+      const interval = setInterval(updateCountdown, 3600000);
 
       return () => clearInterval(interval);
     }
   }, [selectedGroup]);
 
-  const handleGroupSelect = (group: (typeof mockGroups)[0]) => {
+  useEffect(() => {
+    if (currentUser && !loading) {
+      const fetchUser = async () => {
+        const userData = await getUserById(currentUser.uid);
+        if (!userData) {
+          console.error("User not found");
+          setUser(null);
+          return;
+        }
+        setUser(userData);
+      };
+      fetchUser();
+    }
+  }, [currentUser, loading]);
+
+  useEffect(() => {
+    if (user && user.groups) {
+      const fetchGroups = async () => {
+        const groupPromises = [...user.groups, mockGroup].map(
+          async (groupId) => {
+            if (typeof groupId === "string") {
+              return await getGroupById(groupId);
+            }
+            return groupId;
+          }
+        );
+
+        const fetchedGroups = await Promise.all(groupPromises);
+        setGroups(fetchedGroups.filter((g): g is GroupDoc => g !== null));
+      };
+      fetchGroups();
+    }
+  }, [user]);
+
+  const handleGroupSelect = (group: GroupDoc) => {
     setSelectedGroup(group);
-    setIsSidebarOpen(false); // Close sidebar on mobile after selection
+    setIsSidebarOpen(false);
   };
+
+  if (!loading && user === null) {
+    redirect("/login");
+  }
 
   return (
     <div className="flex h-screen bg-background relative">
@@ -228,39 +235,42 @@ export default function Dashboard() {
         </div>
 
         <div className="overflow-y-auto">
-          {mockGroups.map((group) => (
-            <div
-              key={group.id}
-              className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${
-                selectedGroup?.id === group.id ? "bg-muted" : ""
-              }`}
-              onClick={() => handleGroupSelect(group)}
-            >
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-sm truncate flex-1">
-                  {group.name}
-                </h3>
-                {group.isCreator && (
-                  <Crown className="w-4 h-4 text-yellow-500 ml-2" />
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                {group.description}
-              </p>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  {group.members}
-                </div>
-                <Badge
-                  variant={group.status === "active" ? "default" : "secondary"}
-                  className="text-xs"
+          {user !== undefined &&
+            user?.groups &&
+            groups.map((group) => {
+              return (
+                <div
+                  key={group.id}
+                  className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${
+                    selectedGroup?.id === group.id ? "bg-muted" : ""
+                  }`}
+                  onClick={() => handleGroupSelect(group)}
                 >
-                  {group.status === "active" ? "Activo" : "Finalizado"}
-                </Badge>
-              </div>
-            </div>
-          ))}
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-semibold text-sm truncate flex-1">
+                      {group.name}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                    {group.description}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      {group.members}
+                    </div>
+                    <Badge
+                      variant={
+                        group.status === "activo" ? "default" : "secondary"
+                      }
+                      className="text-xs"
+                    >
+                      {group.status === "activo" ? "Activo" : "Finalizado"}
+                    </Badge>
+                  </div>
+                </div>
+              );
+            })}
         </div>
       </div>
 
@@ -327,7 +337,7 @@ export default function Dashboard() {
                     <div className="flex flex-col items-center">
                       <Trophy className="w-3 h-3 text-muted-foreground mb-1" />
                       <p className="text-xs font-medium">
-                        {selectedGroup.listsSent}/{selectedGroup.members}
+                        {selectedGroup.lists}/{selectedGroup.members}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
                         listas
@@ -345,18 +355,15 @@ export default function Dashboard() {
                     <h2 className="text-2xl font-bold truncate">
                       {selectedGroup.name}
                     </h2>
-                    {selectedGroup.isCreator && (
-                      <Crown className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-                    )}
                   </div>
                   <p className="text-muted-foreground">
                     {selectedGroup.description}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground ml-4 flex-shrink-0">
+                {/* <div className="flex items-center gap-2 text-sm text-muted-foreground ml-4 flex-shrink-0">
                   <Hash className="w-4 h-4" />
                   <span>{selectedGroup.code}</span>
-                </div>
+                </div> */}
               </div>
 
               <div className="grid grid-cols-3 gap-4">
@@ -411,8 +418,7 @@ export default function Dashboard() {
                       <Trophy className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {selectedGroup.listsSent}/{selectedGroup.members}{" "}
-                          Listas
+                          {selectedGroup.lists}/{selectedGroup.members} Listas
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Enviadas
@@ -432,7 +438,7 @@ export default function Dashboard() {
                     <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span>Mi Lista</span>
                       <Button size="sm" className="w-full sm:w-auto">
-                        {selectedGroup.status === "active"
+                        {selectedGroup.status === "activo"
                           ? "Editar Lista"
                           : "Ver Lista"}
                       </Button>
