@@ -27,7 +27,10 @@ export const metadata: Metadata = {
     "Competencia",
     "Apuestas divertidas",
   ],
-  authors: [{ name: "Pablo Garcia Rius", url: "https://pablogrius.com" }],
+  authors: [
+    { name: "Pablo Garcia Rius", url: "https://pablogrius.com" },
+    { name: "La Necroporra", url: "https://lanecroporra.com" },
+  ],
   metadataBase: new URL("https://lanecroporra.com"),
   openGraph: {
     title: "La Necroporra - El Reto Anual más Controvertido",
@@ -37,7 +40,7 @@ export const metadata: Metadata = {
     siteName: "La Necroporra",
     images: [
       {
-        url: "/logo.png", // must exist in /public
+        url: "/logo.png",
         width: 512,
         height: 512,
         alt: "Logo de La Necroporra",
@@ -61,7 +64,6 @@ export const metadata: Metadata = {
     apple: [{ url: "/logo.png", sizes: "180x180", type: "image/png" }],
   },
   robots: { index: true, follow: true },
-  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
