@@ -7,13 +7,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { signInWithGoogle } from "@/lib/firebase/auth.js";
+import { auth } from "@/lib/firebase/clientApp";
+import { createUser } from "@/lib/firestore/users";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { Chrome } from "lucide-react";
 import { Button } from "./ui/button";
 
 export function AuthCard() {
-  const handleSignIn = () => {
-    signInWithGoogle();
+  const handleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    await createUser(result.user);
   };
   return (
     <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
