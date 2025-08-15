@@ -1,15 +1,30 @@
 import { GroupDoc } from "@/models/Group";
-import { collection, doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  arrayUnion,
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "../firebase/clientApp";
 
 export async function getGroupById(uid: string): Promise<GroupDoc | null> {
   const groupRef = doc(db, "groups", uid);
   const groupSnap = await getDoc(groupRef);
   const data = groupSnap.data();
-  return groupSnap.exists() ? (data as GroupDoc) : null;
+  return groupSnap.exists()
+    ? ({
+        ...data,
+        deadline: (data?.deadline as Timestamp).toDate(),
+      } as GroupDoc)
+    : null;
 }
 
-export async function createGroup(groupData: Omit<GroupDoc, "id">) {
+export async function createGroup(
+  groupData: Omit<GroupDoc, "id" | "members" | "status" | "lists">
+) {
   const groupRef = doc(collection(db, "groups"));
 
   const newGroup: GroupDoc = {
@@ -24,4 +39,9 @@ export async function createGroup(groupData: Omit<GroupDoc, "id">) {
   };
 
   await setDoc(groupRef, newGroup);
+
+  const userRef = doc(db, "users", groupData.creatorId);
+  await updateDoc(userRef, {
+    groups: arrayUnion(groupRef.id),
+  });
 }

@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { getGroupById } from "@/lib/firestore/groups";
 import { getUserById } from "@/lib/firestore/users";
 import { GroupDoc } from "@/models/Group";
@@ -30,21 +29,10 @@ import { Calendar, Menu, Plus, Trophy, UserPlus, Users, X } from "lucide-react";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// Mock data for groups
-const mockGroup: GroupDoc = {
-  id: "ab1",
-  name: "Amigos del Barrio 2024",
-  creatorId: "user123",
-  members: [],
-  deadline: new Date("2024-12-31"),
-  status: "activo",
-  lists: [],
-  description: "Grupo de amigos del barrio para la necroporra 2024",
-};
-
 const calculateTimeLeft = (deadline: Date) => {
   const now = new Date();
-  const timeDiff = deadline.getTime() - now.getTime();
+  console.log(deadline, typeof deadline);
+  const timeDiff = new Date(deadline).getTime() - now.getTime();
 
   if (timeDiff <= 0) {
     return { months: 0, days: 0, expired: true };
@@ -63,7 +51,6 @@ export default function Dashboard() {
   const [groups, setGroups] = useState<GroupDoc[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<GroupDoc | null>(null);
 
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState<{
@@ -103,14 +90,12 @@ export default function Dashboard() {
   useEffect(() => {
     if (user && user.groups) {
       const fetchGroups = async () => {
-        const groupPromises = [...user.groups, mockGroup].map(
-          async (groupId) => {
-            if (typeof groupId === "string") {
-              return await getGroupById(groupId);
-            }
-            return groupId;
+        const groupPromises = user.groups.map(async (groupId) => {
+          if (typeof groupId === "string") {
+            return await getGroupById(groupId);
           }
-        );
+          return groupId;
+        });
 
         const fetchedGroups = await Promise.all(groupPromises);
         setGroups(fetchedGroups.filter((g): g is GroupDoc => g !== null));
@@ -160,45 +145,14 @@ export default function Dashboard() {
             </Button>
           </div>
           <div className="flex gap-2">
-            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="flex-1">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Crear
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Crear Nuevo Grupo</DialogTitle>
-                  <DialogDescription>
-                    Crea un nuevo grupo para la necroporra y invita a tus
-                    amigos.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Nombre del Grupo</Label>
-                    <Input id="name" placeholder="Ej: Amigos 2024" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="description">Descripción</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Describe tu grupo..."
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="deadline">Fecha límite para listas</Label>
-                    <Input id="deadline" type="date" />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button onClick={() => setShowCreateDialog(false)}>
-                    Crear Grupo
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button
+              size="sm"
+              className="flex-1"
+              onClick={() => redirect("/dashboard/create-group")}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Crear
+            </Button>
 
             <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
               <DialogTrigger asChild>
@@ -257,7 +211,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Users className="w-3 h-3" />
-                      {group.members}
+                      {group.members.length}
                     </div>
                     <Badge
                       variant={
@@ -296,7 +250,7 @@ export default function Dashboard() {
                     <div className="flex flex-col items-center">
                       <Users className="w-3 h-3 text-muted-foreground mb-1" />
                       <p className="text-xs font-medium">
-                        {selectedGroup.members}
+                        {selectedGroup.members.length}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
                         miembros
@@ -337,7 +291,7 @@ export default function Dashboard() {
                     <div className="flex flex-col items-center">
                       <Trophy className="w-3 h-3 text-muted-foreground mb-1" />
                       <p className="text-xs font-medium">
-                        {selectedGroup.lists}/{selectedGroup.members}
+                        {selectedGroup.lists}/{selectedGroup.members.length}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
                         listas
@@ -373,7 +327,8 @@ export default function Dashboard() {
                       <Users className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {selectedGroup.members} Miembros
+                          {selectedGroup.members.length} Miembro
+                          {selectedGroup.members.length > 1 && "s"}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           En el grupo
@@ -418,7 +373,8 @@ export default function Dashboard() {
                       <Trophy className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {selectedGroup.lists}/{selectedGroup.members} Listas
+                          {selectedGroup.lists.length}/
+                          {selectedGroup.members.length} Listas
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Enviadas
