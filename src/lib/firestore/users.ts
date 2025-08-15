@@ -22,8 +22,8 @@ export async function createUser(authUser: User) {
   if (!snap.exists()) {
     const newUser: UserDoc = {
       uid: authUser.uid,
-      email: authUser.email || null,
-      displayName: authUser.displayName || null,
+      email: authUser.email!,
+      displayName: authUser.displayName || authUser.email!.split("@")[0],
       createdAt: new Date(),
       groups: [],
     };
