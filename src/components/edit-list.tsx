@@ -165,7 +165,7 @@ export function EditList({ groupId }: { groupId: string }) {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
@@ -175,17 +175,19 @@ export function EditList({ groupId }: { groupId: string }) {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Volver
               </Button>
-              <div>
-                <h1 className="text-xl font-bold">{groupData.name}</h1>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold truncate">
+                  {groupData.name}
+                </h1>
                 <p className="text-sm text-muted-foreground">
                   Editando mi lista
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              {new Date() <= groupData.deadline && (
-                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              {timeLeft && timeLeft.days > 0 && timeLeft.hours > 0 && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground justify-center sm:justify-start">
                   <Calendar className="w-4 h-4" />
                   <span>
                     {timeLeft.days}d {timeLeft.hours}h restantes
@@ -196,7 +198,7 @@ export function EditList({ groupId }: { groupId: string }) {
               <Button
                 onClick={saveList}
                 disabled={!hasChanges}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto"
               >
                 <Save className="w-4 h-4" />
                 Guardar Lista
@@ -207,13 +209,13 @@ export function EditList({ groupId }: { groupId: string }) {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Current List */}
-          <div className="space-y-4">
+        {/* Current List */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4 order-1 lg:order-1">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Mi Lista Actual</span>
+                <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <span className="text-lg">Mi Lista Actual</span>
                   <Badge
                     variant={
                       Object.keys(currentList.bets).length ===
@@ -232,11 +234,7 @@ export function EditList({ groupId }: { groupId: string }) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="flex flex-1 w-full items-center justify-center">
-                    <Loader2 className="animate-spin" />
-                  </div>
-                ) : Object.keys(currentList.bets).length === 0 ? (
+                {Object.keys(currentList.bets).length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Tu lista está vacía</p>
@@ -245,18 +243,18 @@ export function EditList({ groupId }: { groupId: string }) {
                 ) : (
                   <div className="space-y-3">
                     {Object.entries(currentList.bets).map(
-                      ([key, bet], index) => (
+                      ([key, person], index) => (
                         <div
-                          key={key}
+                          key={index}
                           className="flex items-center justify-between p-3 rounded-lg border border-border"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
                               {index + 1}
                             </div>
-                            <div>
-                              <p className="font-medium">{bet}</p>
-                              {/* <p className="text-sm text-muted-foreground">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium truncate">{person}</p>
+                              {/* <p className="text-sm text-muted-foreground truncate">
                               {person.profession} • {person.age} años
                             </p> */}
                             </div>
@@ -265,7 +263,7 @@ export function EditList({ groupId }: { groupId: string }) {
                             variant="ghost"
                             size="sm"
                             onClick={() => removeBetFromList(key)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 flex-shrink-0 ml-2"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -282,14 +280,18 @@ export function EditList({ groupId }: { groupId: string }) {
               <Alert
                 className={
                   timeLeft.days <= 0 && timeLeft.hours <= 0
-                    ? "border-red-200 bg-red-50"
+                    ? "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+                    : timeLeft.days <= 7
+                    ? "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20"
                     : ""
                 }
               >
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
+                <AlertDescription className="text-sm">
                   {timeLeft.days <= 0 && timeLeft.hours <= 0
                     ? "La fecha límite ha expirado. No puedes modificar tu lista."
+                    : timeLeft.days <= 7
+                    ? `¡Atención! Solo quedan ${timeLeft.days} días y ${timeLeft.hours} horas para enviar tu lista.`
                     : `Tienes ${timeLeft.days} días y ${timeLeft.hours} horas para completar tu lista.`}
                 </AlertDescription>
               </Alert>
@@ -297,10 +299,10 @@ export function EditList({ groupId }: { groupId: string }) {
           </div>
 
           {/* Search and Add People */}
-          <div className="space-y-4">
+          <div className="space-y-4 order-2 lg:order-2">
             <Card>
               <CardHeader>
-                <CardTitle>Buscar Personas</CardTitle>
+                <CardTitle className="text-lg">Buscar Personas</CardTitle>
                 <CardDescription>
                   Busca personas famosas para añadir a tu lista
                 </CardDescription>
@@ -320,7 +322,7 @@ export function EditList({ groupId }: { groupId: string }) {
                   <div className="max-h-96 overflow-y-auto space-y-2">
                     {filteredSuggestions.map((person) => {
                       const isInList = Object.values(currentList.bets).some(
-                        (bet) => bet === person.name
+                        (p) => p === person.name
                       );
                       const canAdd =
                         Object.keys(currentList.bets).length <
@@ -331,7 +333,7 @@ export function EditList({ groupId }: { groupId: string }) {
                           key={person.id}
                           className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
                             isInList
-                              ? "border-green-200 bg-green-50"
+                              ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20"
                               : canAdd
                               ? "border-border hover:bg-muted/50 cursor-pointer"
                               : "border-border bg-muted/30 opacity-50"
@@ -340,13 +342,15 @@ export function EditList({ groupId }: { groupId: string }) {
                             canAdd && addPersonToList("default", person.name)
                           }
                         >
-                          <div>
-                            <p className="font-medium">{person.name}</p>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">
+                              {person.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground truncate">
                               {person.profession} • {person.age} años
                             </p>
                           </div>
-                          <div>
+                          <div className="flex-shrink-0 ml-3">
                             {isInList ? (
                               <CheckCircle className="w-5 h-5 text-green-500" />
                             ) : canAdd ? (

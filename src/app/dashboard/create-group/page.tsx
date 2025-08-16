@@ -54,16 +54,20 @@ export default function CreateGroup() {
   const isStep2Valid = groupData.maxBets > 0 && groupData.deadline !== "";
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <Button variant="ghost" onClick={handleBack} className="mb-4">
+          <Button
+            variant="ghost"
+            onClick={handleBack}
+            className="mb-4 w-full sm:w-auto justify-start"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             {currentStep === 1 ? "Volver al Dashboard" : "Paso Anterior"}
           </Button>
 
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
             <div className="flex items-center gap-2">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -86,7 +90,12 @@ export default function CreateGroup() {
             <div
               className={`h-px flex-1 ${
                 currentStep >= 2 ? "bg-primary" : "bg-muted"
-              }`}
+              } hidden sm:block`}
+            />
+            <div
+              className={`w-px h-4 ${
+                currentStep >= 2 ? "bg-primary" : "bg-muted"
+              } sm:hidden mx-4`}
             />
 
             <div className="flex items-center gap-2">
@@ -116,16 +125,20 @@ export default function CreateGroup() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                <CardTitle>Información del Grupo</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
+                  Información del Grupo
+                </CardTitle>
               </div>
-              <CardDescription>
+              <CardDescription className="text-sm sm:text-base">
                 Proporciona la información básica para tu nuevo grupo de
                 necroporra
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre del Grupo *</Label>
+                <Label htmlFor="name" className="text-sm font-medium">
+                  Nombre del Grupo *
+                </Label>
                 <Input
                   id="name"
                   placeholder="Ej: Amigos del Barrio 2024"
@@ -133,6 +146,7 @@ export default function CreateGroup() {
                   onChange={(e) =>
                     setGroupData({ ...groupData, name: e.target.value })
                   }
+                  className="text-base sm:text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
                   Elige un nombre único y memorable para tu grupo
@@ -140,7 +154,9 @@ export default function CreateGroup() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descripción *</Label>
+                <Label htmlFor="description" className="text-sm font-medium">
+                  Descripción *
+                </Label>
                 <Textarea
                   id="description"
                   placeholder="Describe tu grupo, las reglas especiales, o cualquier información relevante..."
@@ -149,6 +165,7 @@ export default function CreateGroup() {
                     setGroupData({ ...groupData, description: e.target.value })
                   }
                   rows={4}
+                  className="text-base sm:text-sm resize-none"
                 />
                 <p className="text-xs text-muted-foreground">
                   Esta descripción será visible para todos los miembros del
@@ -156,8 +173,12 @@ export default function CreateGroup() {
                 </p>
               </div>
 
-              <div className="flex justify-end">
-                <Button onClick={handleNext} disabled={!isStep1Valid}>
+              <div className="flex justify-end pt-4">
+                <Button
+                  onClick={handleNext}
+                  disabled={!isStep1Valid}
+                  className="w-full sm:w-auto"
+                >
                   Siguiente Paso
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -172,15 +193,17 @@ export default function CreateGroup() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Settings className="w-5 h-5" />
-                <CardTitle>Configuración del Juego</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
+                  Configuración del Juego
+                </CardTitle>
               </div>
-              <CardDescription>
+              <CardDescription className="text-sm sm:text-base">
                 Define las reglas y límites para las apuestas en tu grupo
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="maxBets">
+                <Label htmlFor="maxBets" className="text-sm font-medium">
                   Número máximo de apuestas por persona *
                 </Label>
                 <Input
@@ -195,6 +218,7 @@ export default function CreateGroup() {
                       maxBets: Number.parseInt(e.target.value) || 0,
                     })
                   }
+                  className="text-base sm:text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
                   Cada miembro podrá apostar por un máximo de{" "}
@@ -203,14 +227,18 @@ export default function CreateGroup() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="deadline">
+                <Label htmlFor="deadline" className="text-sm font-medium">
                   Fecha límite para enviar listas *
                 </Label>
                 <Input
                   id="deadline"
                   type="date"
                   value={groupData.deadline}
-                  disabled={true}
+                  onChange={(e) =>
+                    setGroupData({ ...groupData, deadline: e.target.value })
+                  }
+                  min={new Date().toISOString().split("T")[0]}
+                  className="text-base sm:text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
                   Los miembros tendrán hasta esta fecha para completar sus
@@ -219,9 +247,11 @@ export default function CreateGroup() {
               </div>
 
               <div className="bg-muted/50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Próximamente:</h4>
+                <h4 className="font-medium mb-2 text-sm sm:text-base">
+                  Próximamente:
+                </h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Restricciones de edad</li>
+                  <li>• Restricciones de edad (máx. 2 mayores de 80 años)</li>
                   <li>
                     • Categorías especiales (deportistas, actores, políticos)
                   </li>
@@ -230,12 +260,20 @@ export default function CreateGroup() {
                 </ul>
               </div>
 
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={handleBack}>
+              <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  className="w-full sm:w-auto order-2 sm:order-1 bg-transparent"
+                >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Paso Anterior
                 </Button>
-                <Button onClick={handleNext} disabled={!isStep2Valid}>
+                <Button
+                  onClick={handleNext}
+                  disabled={!isStep2Valid}
+                  className="w-full sm:w-auto order-1 sm:order-2"
+                >
                   Crear Grupo
                 </Button>
               </div>
