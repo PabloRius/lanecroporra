@@ -35,6 +35,7 @@ export default function CreateGroup() {
         ...groupData,
         creatorId: currentUser!.uid,
         deadline: new Date(groupData.deadline),
+        settings: { maxBets: groupData.maxBets },
       });
       redirect("/dashboard");
     }

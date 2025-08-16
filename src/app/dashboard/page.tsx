@@ -25,7 +25,17 @@ import { getUserById } from "@/lib/firestore/users";
 import { GroupDoc } from "@/models/Group";
 import { UserDoc } from "@/models/User";
 import { useAuth } from "@/providers/auth-provider";
-import { Calendar, Menu, Plus, Trophy, UserPlus, Users, X } from "lucide-react";
+import {
+  Calendar,
+  Loader2,
+  Menu,
+  Plus,
+  Trophy,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -109,7 +119,15 @@ export default function Dashboard() {
     setIsSidebarOpen(false);
   };
 
-  if (!loading && user === null) {
+  if (loading || user === undefined) {
+    return (
+      <div className="flex flex-1 w-full items-center justify-center">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
+  }
+
+  if (user === null) {
     redirect("/login");
   }
 
@@ -215,11 +233,19 @@ export default function Dashboard() {
                     </div>
                     <Badge
                       variant={
-                        group.status === "activo" ? "default" : "secondary"
+                        group.status === "draft"
+                          ? "secondary"
+                          : group.status === "activo"
+                          ? "default"
+                          : "destructive"
                       }
                       className="text-xs"
                     >
-                      {group.status === "activo" ? "Activo" : "Finalizado"}
+                      {group.status === "draft"
+                        ? "Draft"
+                        : group.status === "activo"
+                        ? "Activo"
+                        : "Finalizado"}
                     </Badge>
                   </div>
                 </div>
@@ -291,7 +317,8 @@ export default function Dashboard() {
                     <div className="flex flex-col items-center">
                       <Trophy className="w-3 h-3 text-muted-foreground mb-1" />
                       <p className="text-xs font-medium">
-                        {selectedGroup.lists}/{selectedGroup.members.length}
+                        {Object.keys(selectedGroup.lists).length}/
+                        {selectedGroup.members.length}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
                         listas
@@ -373,7 +400,7 @@ export default function Dashboard() {
                       <Trophy className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {selectedGroup.lists.length}/
+                          {Object.keys(selectedGroup.lists).length}/
                           {selectedGroup.members.length} Listas
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -393,10 +420,12 @@ export default function Dashboard() {
                   <CardHeader className="pb-3 lg:pb-6">
                     <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span>Mi Lista</span>
-                      <Button size="sm" className="w-full sm:w-auto">
-                        {selectedGroup.status === "activo"
-                          ? "Editar Lista"
-                          : "Ver Lista"}
+                      <Button size="sm" className="w-full sm:w-auto" asChild>
+                        <Link href={"dashboard/edit-list/" + selectedGroup.id}>
+                          {selectedGroup.status === "draft"
+                            ? "Editar Lista"
+                            : "Ver Lista"}
+                        </Link>
                       </Button>
                     </CardTitle>
                     <CardDescription>
@@ -404,15 +433,57 @@ export default function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center py-6 lg:py-8 text-muted-foreground">
-                      <Trophy className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-sm lg:text-base">
-                        Aún no has creado tu lista
-                      </p>
-                      <p className="text-xs lg:text-sm">
-                        Tienes hasta el 31 de diciembre
-                      </p>
-                    </div>
+                    {selectedGroup.lists[user.uid] &&
+                    Object.keys(selectedGroup.lists[user.uid]).length > 0 ? (
+                      <div className="space-y-3">
+                        {Object.values(selectedGroup.lists[user.uid].bets).map(
+                          (person, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                {index + 1}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-sm lg:text-base truncate">
+                                  {person}
+                                </p>
+                                {/* <p className="text-xs lg:text-sm text-muted-foreground">
+                                {person.profession} • {person.age} años
+                              </p> */}
+                              </div>
+                            </div>
+                          )
+                        )}
+                        {Object.keys(selectedGroup.lists[user.uid]).length ===
+                          selectedGroup.settings.maxBets && (
+                          <div className="mt-4 p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                              <Trophy className="w-4 h-4" />
+                              <span className="text-sm font-medium">
+                                Lista completa:{" "}
+                                {
+                                  Object.keys(selectedGroup.lists[user.uid])
+                                    .length
+                                }{" "}
+                                personas
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 lg:py-8 text-muted-foreground">
+                        <Trophy className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-sm lg:text-base">
+                          Aún no has creado tu lista
+                        </p>
+                        <p className="text-xs lg:text-sm">
+                          Tienes hasta el 31 de diciembre
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 

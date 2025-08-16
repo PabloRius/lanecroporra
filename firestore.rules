@@ -12,17 +12,32 @@ service cloud.firestore {
     match /groups/{groupId} {
       allow read: if request.auth != null;
 
+      // Only the creator can create a group
       allow create: if request.auth != null 
         && request.resource.data.creatorId == request.auth.uid
         && request.resource.data.name is string
         && request.resource.data.description is string
-        && request.resource.data.deadline is timestamp
+        && request.resource.data.deadline is timestamp;
 
-      allow update: if request.auth != null
-        && request.data.creatorId == request.auth.uid
+      // Updates
+      allow update: if request.auth != null && (
+        // Case 1: group creator updating anything
+        (request.auth.uid == resource.data.creatorId)
 
+        ||
+
+        // Case 2: a member updating ONLY their own list
+        (
+          request.auth.uid in resource.data.members
+          && request.resource.data.lists[request.auth.uid] == request.resource.data.lists[request.auth.uid] // user modifies only their list
+          && request.resource.data == resource.data
+              .diff({"lists": {request.auth.uid: request.resource.data.lists[request.auth.uid]}})
+        )
+      );
+
+      // Only the creator can delete
       allow delete: if request.auth != null
-        && resource.data.creatorId == request.auth.uid
+        && resource.data.creatorId == request.auth.uid;
     }
   }
 }

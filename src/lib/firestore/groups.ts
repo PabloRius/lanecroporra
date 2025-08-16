@@ -1,4 +1,5 @@
 import { GroupDoc } from "@/models/Group";
+import { ListDoc } from "@/models/List";
 import {
   arrayUnion,
   collection,
@@ -35,7 +36,8 @@ export async function createGroup(
     members: [groupData.creatorId],
     status: "activo",
     deadline: groupData.deadline,
-    lists: [],
+    lists: {},
+    settings: groupData.settings,
   };
 
   await setDoc(groupRef, newGroup);
@@ -43,5 +45,17 @@ export async function createGroup(
   const userRef = doc(db, "users", groupData.creatorId);
   await updateDoc(userRef, {
     groups: arrayUnion(groupRef.id),
+  });
+}
+
+export async function updateLists(
+  groupId: string,
+  userId: string,
+  list: ListDoc
+) {
+  const groupRef = doc(db, "groups", groupId);
+
+  await updateDoc(groupRef, {
+    [`lists.${userId}`]: list,
   });
 }
