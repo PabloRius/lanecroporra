@@ -447,7 +447,7 @@ export default function Dashboard() {
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium text-sm lg:text-base truncate">
-                                  {person}
+                                  {person.name}
                                 </p>
                                 {/* <p className="text-xs lg:text-sm text-muted-foreground">
                                 {person.profession} • {person.age} años
