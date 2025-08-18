@@ -1,3 +1,6 @@
+import { BetDoc } from "./Bet";
+
 export interface ListDoc {
-  bets: Record<string, string>;
+  bets: Array<BetDoc>;
+  points: number;
 }

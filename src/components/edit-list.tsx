@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getGroupById, updateLists } from "@/lib/firestore/groups";
+import { BetDoc } from "@/models/Bet";
 import { GroupDoc } from "@/models/Group";
 import { ListDoc } from "@/models/List";
 import { useAuth } from "@/providers/auth-provider";
@@ -42,11 +43,14 @@ const mockSuggestions = [
 ];
 
 export function EditList({ groupId }: { groupId: string }) {
-  const { currentUser, loading } = useAuth();
+  const { currentUser } = useAuth();
   const [groupData, setGroupData] = useState<GroupDoc | undefined | null>(
     undefined
   );
-  const [currentList, setCurrentList] = useState<ListDoc>({ bets: {} });
+  const [currentList, setCurrentList] = useState<ListDoc>({
+    bets: [],
+    points: 0,
+  });
 
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0 });
   const [hasChanges, setHasChanges] = useState(false);
@@ -106,29 +110,20 @@ export function EditList({ groupId }: { groupId: string }) {
     setFilteredSuggestions(filtered);
   }, [searchTerm]);
 
-  const addPersonToList = (key: string, newBet: string) => {
+  const addBetToList = (newBet: BetDoc) => {
     setCurrentList((prev) => {
       if (Object.keys(prev.bets).length >= groupData!.settings.maxBets)
         return prev;
-      if (Object.values(prev.bets).some((bet) => bet === newBet)) return prev;
+      if (prev.bets.some((bet) => bet.name === newBet.name)) return prev;
 
-      let uniqueKey = key;
-      let counter = 1;
-      while (prev.bets.hasOwnProperty(uniqueKey)) {
-        uniqueKey = `${key}-${counter}`;
-        counter++;
-      }
-
-      return { ...prev, bets: { ...prev.bets, [uniqueKey]: newBet } };
+      return { ...prev, bets: [...prev.bets, newBet] };
     });
     setHasChanges(true);
   };
 
-  const removeBetFromList = (key: string) => {
+  const removeBetFromList = (index: number) => {
     setCurrentList((prev) => {
-      const updatedBets = { ...prev.bets };
-      delete updatedBets[key];
-      return { ...prev, bets: updatedBets };
+      return { ...prev, bets: prev.bets.filter((_, i) => i !== index) };
     });
     setHasChanges(true);
   };
@@ -242,34 +237,32 @@ export function EditList({ groupId }: { groupId: string }) {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {Object.entries(currentList.bets).map(
-                      ([key, person], index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 rounded-lg border border-border"
-                        >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
-                              {index + 1}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium truncate">{person}</p>
-                              {/* <p className="text-sm text-muted-foreground truncate">
+                    {currentList.bets.map(({ name }, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 rounded-lg border border-border"
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                            {index + 1}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">{name}</p>
+                            {/* <p className="text-sm text-muted-foreground truncate">
                               {person.profession} • {person.age} años
                             </p> */}
-                            </div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeBetFromList(key)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 flex-shrink-0 ml-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
                         </div>
-                      )
-                    )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeBetFromList(index)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 flex-shrink-0 ml-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -321,8 +314,8 @@ export function EditList({ groupId }: { groupId: string }) {
 
                   <div className="max-h-96 overflow-y-auto space-y-2">
                     {filteredSuggestions.map((person) => {
-                      const isInList = Object.values(currentList.bets).some(
-                        (p) => p === person.name
+                      const isInList = currentList.bets.some(
+                        (bet) => bet.name === person.name
                       );
                       const canAdd =
                         Object.keys(currentList.bets).length <
@@ -339,7 +332,12 @@ export function EditList({ groupId }: { groupId: string }) {
                               : "border-border bg-muted/30 opacity-50"
                           }`}
                           onClick={() =>
-                            canAdd && addPersonToList("default", person.name)
+                            canAdd &&
+                            addBetToList({
+                              name: person.name,
+                              type: "default",
+                              status: "alive",
+                            })
                           }
                         >
                           <div className="min-w-0 flex-1">
