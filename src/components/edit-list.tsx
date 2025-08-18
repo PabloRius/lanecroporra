@@ -43,7 +43,7 @@ const mockSuggestions = [
 ];
 
 export function EditList({ groupId }: { groupId: string }) {
-  const { currentUser } = useAuth();
+  const { currentUser, loading } = useAuth();
   const [groupData, setGroupData] = useState<GroupDoc | undefined | null>(
     undefined
   );
@@ -134,7 +134,7 @@ export function EditList({ groupId }: { groupId: string }) {
     redirect("/dashboard");
   };
 
-  if (groupData === undefined) {
+  if (groupData === undefined || loading) {
     return (
       <div className="flex flex-1 w-full items-center justify-center">
         <Loader2 className="animate-spin" />
@@ -147,6 +147,22 @@ export function EditList({ groupId }: { groupId: string }) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Grupo no encontrado</h1>
+          <Button onClick={() => redirect("/dashboard")}>
+            Volver al Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!(currentUser && groupData.members.includes(currentUser.uid))) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Acceso Denegado</h1>
+          <p className="text-gray-600 mb-4">
+            No tienes permiso para editar esta lista.
+          </p>
           <Button onClick={() => redirect("/dashboard")}>
             Volver al Dashboard
           </Button>
