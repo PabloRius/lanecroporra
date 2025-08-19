@@ -1,15 +1,32 @@
 import { ListDoc } from "./List";
 
-export interface GroupDoc {
+export interface MemberDoc {
+  role: "admin" | "member";
+  list: ListDoc;
+  joinedAt: Date;
+}
+
+export interface PublicGroupDoc {
   id: string;
-  creatorId: string;
   name: string;
   description: string;
-  members: Array<string>;
   status: "draft" | "activo" | "finalizado";
   deadline: Date;
-  lists: Record<string, ListDoc>;
+  creatorId: string;
+}
+
+export interface PrivateGroupDoc {
   settings: {
     maxBets: number;
   };
+  inviteLinks: string[];
 }
+
+export type MembersMap = Record<string, MemberDoc>;
+
+export type GroupDoc = {
+  id: string;
+  public: PublicGroupDoc;
+  private?: PrivateGroupDoc;
+  members?: MembersMap;
+};

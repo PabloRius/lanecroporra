@@ -1,5 +1,6 @@
 "use client";
 
+import GroupManagementModal from "@/components/group-management-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ import {
   Loader2,
   Menu,
   Plus,
+  Settings,
   Trophy,
   UserPlus,
   Users,
@@ -60,6 +62,7 @@ export default function Dashboard() {
   const [user, setUser] = useState<UserDoc | undefined | null>(undefined);
   const [groups, setGroups] = useState<GroupDoc[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<GroupDoc | null>(null);
+  const [showGroupManagement, setShowGroupManagement] = useState(false);
 
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -72,7 +75,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (selectedGroup) {
       const updateCountdown = () => {
-        setTimeLeft(calculateTimeLeft(selectedGroup.deadline));
+        setTimeLeft(calculateTimeLeft(selectedGroup.public.deadline));
       };
 
       updateCountdown();
@@ -101,10 +104,7 @@ export default function Dashboard() {
     if (user && user.groups) {
       const fetchGroups = async () => {
         const groupPromises = user.groups.map(async (groupId) => {
-          if (typeof groupId === "string") {
-            return await getGroupById(groupId);
-          }
-          return groupId;
+          return await getGroupById(groupId, user.uid);
         });
 
         const fetchedGroups = await Promise.all(groupPromises);
@@ -130,6 +130,10 @@ export default function Dashboard() {
   if (user === null) {
     redirect("/login");
   }
+
+  const isAdmin = selectedGroup?.members
+    ? selectedGroup?.members[user.uid].role === "admin"
+    : false;
 
   return (
     <div className="flex h-screen bg-background relative">
@@ -210,6 +214,7 @@ export default function Dashboard() {
           {user !== undefined &&
             user?.groups &&
             groups.map((group) => {
+              if (!group.private || !group.members) return null;
               return (
                 <div
                   key={group.id}
@@ -220,30 +225,30 @@ export default function Dashboard() {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-sm truncate flex-1">
-                      {group.name}
+                      {group.public.name}
                     </h3>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                    {group.description}
+                    {group.public.description}
                   </p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Users className="w-3 h-3" />
-                      {group.members.length}
+                      {Object.keys(group.members).length}
                     </div>
                     <Badge
                       variant={
-                        group.status === "draft"
+                        group.public.status === "draft"
                           ? "secondary"
-                          : group.status === "activo"
+                          : group.public.status === "activo"
                           ? "default"
                           : "destructive"
                       }
                       className="text-xs"
                     >
-                      {group.status === "draft"
+                      {group.public.status === "draft"
                         ? "Draft"
-                        : group.status === "activo"
+                        : group.public.status === "activo"
                         ? "Activo"
                         : "Finalizado"}
                     </Badge>
@@ -266,7 +271,18 @@ export default function Dashboard() {
               >
                 <Menu className="w-4 h-4" />
               </Button>
-              <h2 className="font-semibold truncate">{selectedGroup.name}</h2>
+              <h2 className="font-semibold truncate flex-1">
+                {selectedGroup.public.name}
+              </h2>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowGroupManagement(true)}
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              )}
             </div>
 
             <div className="lg:hidden  left-0 right-0 z-30 bg-card border-b border-border p-3">
@@ -276,7 +292,7 @@ export default function Dashboard() {
                     <div className="flex flex-col items-center">
                       <Users className="w-3 h-3 text-muted-foreground mb-1" />
                       <p className="text-xs font-medium">
-                        {selectedGroup.members.length}
+                        {Object.keys(selectedGroup.members!).length}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
                         miembros
@@ -317,8 +333,12 @@ export default function Dashboard() {
                     <div className="flex flex-col items-center">
                       <Trophy className="w-3 h-3 text-muted-foreground mb-1" />
                       <p className="text-xs font-medium">
-                        {Object.keys(selectedGroup.lists).length}/
-                        {selectedGroup.members.length}
+                        {
+                          Object.values(selectedGroup.members || {}).filter(
+                            (member) => Object.keys(member.list.bets).length > 0
+                          ).length
+                        }
+                        /{Object.keys(selectedGroup.members!).length}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
                         listas
@@ -334,17 +354,24 @@ export default function Dashboard() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h2 className="text-2xl font-bold truncate">
-                      {selectedGroup.name}
+                      {selectedGroup.public.name}
                     </h2>
                   </div>
                   <p className="text-muted-foreground">
-                    {selectedGroup.description}
+                    {selectedGroup.public.description}
                   </p>
                 </div>
-                {/* <div className="flex items-center gap-2 text-sm text-muted-foreground ml-4 flex-shrink-0">
-                  <Hash className="w-4 h-4" />
-                  <span>{selectedGroup.code}</span>
-                </div> */}
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowGroupManagement(true)}
+                    className="bg-transparent"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Gestionar
+                  </Button>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-4">
@@ -354,8 +381,9 @@ export default function Dashboard() {
                       <Users className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {selectedGroup.members.length} Miembro
-                          {selectedGroup.members.length > 1 && "s"}
+                          {Object.keys(selectedGroup.members!).length} Miembro
+                          {Object.keys(selectedGroup.members!).length > 1 &&
+                            "s"}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           En el grupo
@@ -400,8 +428,13 @@ export default function Dashboard() {
                       <Trophy className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">
-                          {Object.keys(selectedGroup.lists).length}/
-                          {selectedGroup.members.length} Listas
+                          {
+                            Object.values(selectedGroup.members || {}).filter(
+                              (member) =>
+                                Object.keys(member.list.bets).length > 0
+                            ).length
+                          }
+                          /{Object.keys(selectedGroup.members!).length} Listas
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Enviadas
@@ -422,7 +455,7 @@ export default function Dashboard() {
                       <span>Mi Lista</span>
                       <Button size="sm" className="w-full sm:w-auto" asChild>
                         <Link href={"dashboard/edit-list/" + selectedGroup.id}>
-                          {selectedGroup.status === "draft"
+                          {selectedGroup.public.status === "draft"
                             ? "Editar Lista"
                             : "Ver Lista"}
                         </Link>
@@ -433,45 +466,30 @@ export default function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {selectedGroup.lists[user.uid] &&
-                    Object.keys(selectedGroup.lists[user.uid]).length > 0 ? (
+                    {selectedGroup.members![user.uid] &&
+                    Object.keys(selectedGroup.members![user.uid].list).length >
+                      0 ? (
                       <div className="space-y-3">
-                        {Object.values(selectedGroup.lists[user.uid].bets).map(
-                          (person, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20"
-                            >
-                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
-                                {index + 1}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="font-medium text-sm lg:text-base truncate">
-                                  {person.name}
-                                </p>
-                                {/* <p className="text-xs lg:text-sm text-muted-foreground">
+                        {Object.values(
+                          selectedGroup.members![user.uid].list.bets
+                        ).map((person, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                              {index + 1}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm lg:text-base truncate">
+                                {person.name}
+                              </p>
+                              {/* <p className="text-xs lg:text-sm text-muted-foreground">
                                 {person.profession} • {person.age} años
                               </p> */}
-                              </div>
-                            </div>
-                          )
-                        )}
-                        {Object.keys(selectedGroup.lists[user.uid]).length ===
-                          selectedGroup.settings.maxBets && (
-                          <div className="mt-4 p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                              <Trophy className="w-4 h-4" />
-                              <span className="text-sm font-medium">
-                                Lista completa:{" "}
-                                {
-                                  Object.keys(selectedGroup.lists[user.uid])
-                                    .length
-                                }{" "}
-                                personas
-                              </span>
                             </div>
                           </div>
-                        )}
+                        ))}
                       </div>
                     ) : (
                       <div className="text-center py-6 lg:py-8 text-muted-foreground">
@@ -603,6 +621,15 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Group Management Modal */}
+      {isAdmin && selectedGroup && (
+        <GroupManagementModal
+          isOpen={showGroupManagement}
+          onClose={() => setShowGroupManagement(false)}
+          group={selectedGroup}
+        />
+      )}
     </div>
   );
 }

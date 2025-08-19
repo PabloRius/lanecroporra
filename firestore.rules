@@ -5,39 +5,91 @@ service cloud.firestore {
 
     // User documents
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      allow read: if request.auth != null
     }
 
-    // Group documents
+    // Groups main collection (holds subcollections)
     match /groups/{groupId} {
+    
+      // Root-level
+      allow create: if request.auth != null
+        && request.resource.data.creatorId == request.auth.uid
+
+      allow delete: if request.auth != null
+        && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == "admin"; 
+
+      // PUBLIC subcollection
+      match /public/{docId} {
+        allow create: if request.auth != null
+          && request.resource.data.creatorId == request.auth.uid
+
+        allow delete: if request.auth != null
+          && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == "admin"; 
+
+        allow read: if request.auth != null;
+      }
+
+      // PRIVATE subcollection
+      match /private/{docId} {
+        allow create: if request.auth != null
+          && get(/databases/$(database)/documents/groups/$(groupId)/public/data).data.creatorId == request.auth.uid;
+
+        allow delete: if request.auth != null
+          && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == "admin"; 
+
+        allow read: if request.auth != null
+          && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+
+        allow update: if request.auth != null
+         && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == "admin";
+
+      }
+
+      // MEMBERS subcollection
+      match /members/{memberId} {
+        allow read: if request.auth != null
+          && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+
+        allow update: if request.auth != null
+          && request.auth.uid == memberId
+
+        allow update: if request.auth != null
+          && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == "admin";
+
+        allow create: if request.auth != null
+          && request.auth.uid == memberId
+          && (
+            get(/databases/$(database)/documents/groups/$(groupId)/public/data).data.creatorId == request.auth.uid
+            ||
+            (request.resource.data.inviteId is string
+              && exists(/databases/$(database)/documents/invites/$(request.resource.data.inviteId))
+              && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteId)).data.used == false)
+          );
+          
+
+        allow delete: if request.auth != null
+          && (
+            request.auth.uid == memberId
+            ||
+            get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == "admin"
+          )
+      }
+    }
+
+    // Invite documents
+    match /invites/{inviteId} {
       allow read: if request.auth != null;
 
-      // Only the creator can create a group
-      allow create: if request.auth != null 
-        && request.resource.data.creatorId == request.auth.uid
-        && request.resource.data.name is string
-        && request.resource.data.description is string
-        && request.resource.data.deadline is timestamp;
+      allow create: if request.auth != null
+        && (
+          get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)/private/data).data.creatorId == request.auth.uid
+          || get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)/members/$(request.auth.uid)).data.role == "admin"
+        );
 
-      // Updates
-      allow update: if request.auth != null && (
-        // Case 1: group creator updating anything
-        (request.auth.uid == resource.data.creatorId)
-
-        ||
-
-        // Case 2: a member updating ONLY their own list
-        (
-          request.auth.uid in resource.data.members
-          && request.resource.data.lists[request.auth.uid] == request.resource.data.lists[request.auth.uid] // user modifies only their list
-          && request.resource.data == resource.data
-              .diff({"lists": {request.auth.uid: request.resource.data.lists[request.auth.uid]}})
-        )
-      );
-
-      // Only the creator can delete
-      allow delete: if request.auth != null
-        && resource.data.creatorId == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.used == false;
     }
   }
 }

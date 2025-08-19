@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getGroupById, updateLists } from "@/lib/firestore/groups";
+import { getGroupById, updateList } from "@/lib/firestore/groups";
 import { BetDoc } from "@/models/Bet";
 import { GroupDoc } from "@/models/Group";
 import { ListDoc } from "@/models/List";
@@ -65,8 +65,8 @@ export function EditList({ groupId }: { groupId: string }) {
       const data = await getGroupById(groupId);
       if (data) {
         setGroupData(data);
-        if (currentUser?.uid && data.lists[currentUser?.uid]) {
-          setCurrentList(data.lists[currentUser.uid]);
+        if (currentUser?.uid && data.members![currentUser?.uid].list) {
+          setCurrentList(data.members![currentUser?.uid].list);
         }
         return;
       }
@@ -79,7 +79,7 @@ export function EditList({ groupId }: { groupId: string }) {
     const updateTimeLeft = () => {
       if (!groupData) return;
       const now = new Date();
-      const diff = groupData.deadline.getTime() - now.getTime();
+      const diff = groupData.public.deadline.getTime() - now.getTime();
 
       if (diff <= 0) {
         setTimeLeft({ days: 0, hours: 0 });
@@ -112,7 +112,7 @@ export function EditList({ groupId }: { groupId: string }) {
 
   const addBetToList = (newBet: BetDoc) => {
     setCurrentList((prev) => {
-      if (Object.keys(prev.bets).length >= groupData!.settings.maxBets)
+      if (Object.keys(prev.bets).length >= groupData!.private!.settings.maxBets)
         return prev;
       if (prev.bets.some((bet) => bet.name === newBet.name)) return prev;
 
@@ -129,7 +129,7 @@ export function EditList({ groupId }: { groupId: string }) {
   };
 
   const saveList = async () => {
-    await updateLists(groupId, currentUser!.uid, currentList);
+    await updateList(groupId, currentUser!.uid, currentList);
     setHasChanges(false);
     redirect("/dashboard");
   };
@@ -155,7 +155,9 @@ export function EditList({ groupId }: { groupId: string }) {
     );
   }
 
-  if (!(currentUser && groupData.members.includes(currentUser.uid))) {
+  if (
+    !(currentUser && Object.keys(groupData.members!).includes(currentUser.uid))
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -188,7 +190,7 @@ export function EditList({ groupId }: { groupId: string }) {
               </Button>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-xl font-bold truncate">
-                  {groupData.name}
+                  {groupData.public.name}
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   Editando mi lista
@@ -230,18 +232,18 @@ export function EditList({ groupId }: { groupId: string }) {
                   <Badge
                     variant={
                       Object.keys(currentList.bets).length ===
-                      groupData.settings.maxBets
+                      groupData.private!.settings.maxBets
                         ? "default"
                         : "secondary"
                     }
                   >
                     {Object.keys(currentList.bets).length}/
-                    {groupData.settings.maxBets}
+                    {groupData.private!.settings.maxBets}
                   </Badge>
                 </CardTitle>
                 <CardDescription>
-                  Puedes añadir hasta {groupData.settings.maxBets} personas a tu
-                  lista
+                  Puedes añadir hasta {groupData.private!.settings.maxBets}{" "}
+                  personas a tu lista
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -335,7 +337,7 @@ export function EditList({ groupId }: { groupId: string }) {
                       );
                       const canAdd =
                         Object.keys(currentList.bets).length <
-                          groupData.settings.maxBets && !isInList;
+                          groupData.private!.settings.maxBets && !isInList;
 
                       return (
                         <div

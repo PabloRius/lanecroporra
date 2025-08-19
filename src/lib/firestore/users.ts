@@ -15,6 +15,13 @@ export async function getUserById(uid: string): Promise<UserDoc | null> {
     : null;
 }
 
+export async function resolveUserId(uid: string): Promise<string | null> {
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+  const data = userSnap.data();
+  return userSnap.exists() ? data!.displayName : null;
+}
+
 export async function createUser(authUser: User) {
   const userRef = doc(db, "users", authUser.uid);
   const snap = await getDoc(userRef);
