@@ -96,8 +96,6 @@ export default function GroupManagementModal({
     redirect("/login");
   }
 
-  console.log(group.private);
-
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>

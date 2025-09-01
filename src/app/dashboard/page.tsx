@@ -1,6 +1,7 @@
 "use client";
 
 import GroupManagementModal from "@/components/group-management-modal";
+import { LeaderBoardCard } from "@/components/leaderboard-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,12 +23,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getGroupById } from "@/lib/firestore/groups";
-import { getUserById } from "@/lib/firestore/users";
+import { getUserById, resolveUserId } from "@/lib/firestore/users";
+import { BetDoc } from "@/models/Bet";
 import { GroupDoc } from "@/models/Group";
 import { UserDoc } from "@/models/User";
 import { useAuth } from "@/providers/auth-provider";
 import {
   Calendar,
+  EyeOff,
   Loader2,
   Menu,
   Plus,
@@ -70,6 +73,12 @@ export default function Dashboard() {
     months: number;
     days: number;
     expired: boolean;
+  } | null>(null);
+
+  const [showMemberListModal, setShowMemberListModal] = useState(false);
+  const [selectedMemberList, setSelectedMemberList] = useState<{
+    name: string;
+    list: BetDoc[];
   } | null>(null);
 
   useEffect(() => {
@@ -117,6 +126,16 @@ export default function Dashboard() {
   const handleGroupSelect = (group: GroupDoc) => {
     setSelectedGroup(group);
     setIsSidebarOpen(false);
+  };
+
+  const handleViewMemberList = async (playerUid: string) => {
+    if (!selectedGroup || !selectedGroup.members) return;
+    const memberName = await resolveUserId(playerUid);
+    console.log(selectedGroup.members[playerUid]);
+    const memberList = selectedGroup.members[playerUid].list.bets;
+    if (!memberList || !memberName) return;
+    setSelectedMemberList({ name: memberName, list: memberList });
+    setShowMemberListModal(true);
   };
 
   if (loading || user === undefined) {
@@ -517,35 +536,22 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3 lg:space-y-4">
-                      {[
-                        { name: "Carlos M.", points: 15, position: 1 },
-                        { name: "Ana L.", points: 12, position: 2 },
-                        { name: "Miguel R.", points: 8, position: 3 },
-                        { name: "Tú", points: 0, position: 8 },
-                      ].map((player, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold">
-                              {player.position}
-                            </div>
-                            <span
-                              className={`text-sm lg:text-base ${
-                                player.name === "Tú" ? "font-semibold" : ""
-                              }`}
-                            >
-                              {player.name}
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-sm lg:text-base">
-                              {player.points} pts
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                      {selectedGroup.members &&
+                        Object.entries(selectedGroup.members).map(
+                          ([playerUid, playerData], index) => {
+                            if (!currentUser) return null;
+                            return (
+                              <LeaderBoardCard
+                                key={index}
+                                index={index}
+                                currentUser={currentUser}
+                                onClick={handleViewMemberList}
+                                playerUid={playerUid}
+                                playerData={playerData}
+                              />
+                            );
+                          }
+                        )}
                     </div>
                   </CardContent>
                 </Card>
@@ -630,6 +636,65 @@ export default function Dashboard() {
           group={selectedGroup}
         />
       )}
+
+      {/* Member List Modal */}
+      <Dialog open={showMemberListModal} onOpenChange={setShowMemberListModal}>
+        <DialogContent className="max-w-md mx-auto max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="text-lg lg:text-xl">
+              Lista de {selectedMemberList?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedMemberList?.list.length === 0
+                ? "Este miembro aún no ha enviado su lista"
+                : `${selectedMemberList?.list.length} personas en la lista`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto py-4">
+            {selectedMemberList?.list.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <EyeOff className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm">No hay lista disponible</p>
+                <p className="text-xs mt-1">
+                  Este miembro aún no ha enviado su lista
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {selectedMemberList?.list.map((person, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                      {index + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm truncate">
+                        {person.name}
+                      </p>
+                      {/* <p className="text-xs text-muted-foreground">
+                        {person.profession} • {person.age} años
+                      </p> */}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex-shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowMemberListModal(false)}
+              className="w-full"
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
