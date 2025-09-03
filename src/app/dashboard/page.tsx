@@ -544,7 +544,7 @@ export default function Dashboard() {
                             return (
                               <LeaderBoardCard
                                 key={index}
-                                index={index}
+                                index={index + 1}
                                 currentUser={currentUser}
                                 onClick={handleViewMemberList}
                                 playerUid={playerUid}
@@ -553,6 +553,34 @@ export default function Dashboard() {
                             );
                           }
                         )}
+
+                      {/* Total Points */}
+                      {selectedGroup.members && (
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                              Σ
+                            </div>
+                            <span className="text-sm lg:text-base font-semibold truncate">
+                              Total
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
+                            <div className="text-right">
+                              <p className="font-semibold text-sm lg:text-base">
+                                {Object.values(
+                                  selectedGroup.members || {}
+                                ).reduce(
+                                  (sum, member) =>
+                                    sum + (member.list?.points || 0),
+                                  0
+                                )}{" "}
+                                pts
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -567,13 +595,8 @@ export default function Dashboard() {
                   <CardContent>
                     <div className="space-y-3 text-sm max-h-80 overflow-y-auto">
                       {selectedGroup.private?.activityLog
-                        .slice() // create a shallow copy to avoid mutating state
-                        .sort(
-                          (a, b) =>
-                            b.timestamp.toDate().getTime() -
-                            a.timestamp.toDate().getTime()
-                        ) // newest first
-                        .slice(0, 8) // limit to 8 logs
+                        .slice()
+                        .reverse()
                         .map((log, index) => (
                           <div
                             key={index}
