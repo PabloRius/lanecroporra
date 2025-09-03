@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getGroupById } from "@/lib/firestore/groups";
 import { getUserById, resolveUserId } from "@/lib/firestore/users";
+import { timeAgo } from "@/lib/time-ago";
 import { BetDoc } from "@/models/Bet";
 import { GroupDoc } from "@/models/Group";
 import { UserDoc } from "@/models/User";
@@ -564,25 +565,26 @@ export default function Dashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1">
-                        <span>Carlos M. actualizó su lista</span>
-                        <span className="text-muted-foreground text-xs sm:text-sm">
-                          Hace 2 horas
-                        </span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1">
-                        <span>Ana L. se unió al grupo</span>
-                        <span className="text-muted-foreground text-xs sm:text-sm">
-                          Ayer
-                        </span>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 gap-1">
-                        <span>Grupo creado</span>
-                        <span className="text-muted-foreground text-xs sm:text-sm">
-                          Hace 3 días
-                        </span>
-                      </div>
+                    <div className="space-y-3 text-sm max-h-80 overflow-y-auto">
+                      {selectedGroup.private?.activityLog
+                        .slice() // create a shallow copy to avoid mutating state
+                        .sort(
+                          (a, b) =>
+                            b.timestamp.toDate().getTime() -
+                            a.timestamp.toDate().getTime()
+                        ) // newest first
+                        .slice(0, 8) // limit to 8 logs
+                        .map((log, index) => (
+                          <div
+                            key={index}
+                            className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1 last:border-b-0"
+                          >
+                            <span>{log.message}</span>
+                            <span className="text-muted-foreground text-xs sm:text-sm">
+                              {timeAgo(log.timestamp.toDate())}
+                            </span>
+                          </div>
+                        ))}
                     </div>
                   </CardContent>
                 </Card>

@@ -19,6 +19,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/clientApp";
+import { resolveUserId } from "./users";
 
 export async function getGroupById(
   groupId: string,
@@ -87,9 +88,19 @@ export async function createGroup(
     deadline: groupData.deadline,
   };
 
+  const creatorUsername = await resolveUserId(groupData.creatorId);
+  const now = Timestamp.now();
+
   const privateDoc: PrivateGroupDoc = {
     settings: groupData.settings,
     inviteLinks: [],
+    activityLog: [
+      {
+        message: `Grupo ${groupData.name} creado por ${creatorUsername}`,
+        timestamp: now,
+      },
+      { message: `${creatorUsername} se unió al grupo`, timestamp: now },
+    ],
   };
 
   const memberDoc: MemberDoc = {

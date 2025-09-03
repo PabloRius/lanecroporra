@@ -1,9 +1,15 @@
+import { Timestamp } from "firebase/firestore";
 import { ListDoc } from "./List";
 
 export interface MemberDoc {
   role: "admin" | "member";
   list: ListDoc;
   joinedAt: Date;
+}
+
+export interface Log {
+  message: string;
+  timestamp: Timestamp;
 }
 
 export interface PublicGroupDoc {
@@ -20,6 +26,7 @@ export interface PrivateGroupDoc {
     maxBets: number;
   };
   inviteLinks: string[];
+  activityLog: Log[];
 }
 
 export type MembersMap = Record<string, MemberDoc>;
