@@ -50,10 +50,12 @@ export default function GroupManagementModal({
   isOpen,
   onClose,
   group,
+  reloadGroupData,
 }: {
   isOpen: boolean;
   onClose: () => void;
   group: GroupDoc;
+  reloadGroupData: () => void;
 }) {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<
@@ -62,14 +64,9 @@ export default function GroupManagementModal({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showKickDialog, setShowKickDialog] = useState<string | null>(null);
 
-  const generateNewInviteLink = async () => {
-    if (group.private!.inviteLinks?.length < 5) {
-      const newLink = await generateInvite(group.id, currentUser!.uid);
-      group.private!.inviteLinks = [
-        ...(group.private!.inviteLinks || []),
-        newLink,
-      ];
-    }
+  const regenerateInviteLink = async () => {
+    await generateInvite(group.id, currentUser!.uid);
+    reloadGroupData();
   };
 
   const kickMember = (memberId: string) => {
@@ -149,7 +146,7 @@ export default function GroupManagementModal({
                   <div className="space-y-4">
                     <h4 className="font-medium mb-2">Invitaciones Activas</h4>
                     <Button
-                      onClick={generateNewInviteLink}
+                      onClick={regenerateInviteLink}
                       variant="outline"
                       className="bg-transparent"
                     >
@@ -157,9 +154,7 @@ export default function GroupManagementModal({
                       Generar Nuevo Enlace
                     </Button>
                     <div className="space-y-2 max-w-min overflow-hidden">
-                      {group.private!.inviteLinks?.map((token, index) => {
-                        return <InviteCard key={index} tokenId={token} />;
-                      })}
+                      <InviteCard tokenId={group.private!.inviteLink} />
                     </div>
                   </div>
                 )}

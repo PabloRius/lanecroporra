@@ -19,6 +19,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/clientApp";
+import { generateInvite } from "./invites";
 import { resolveUserId } from "./users";
 
 export async function getGroupById(
@@ -90,10 +91,11 @@ export async function createGroup(
 
   const creatorUsername = await resolveUserId(groupData.creatorId);
   const now = Timestamp.now();
+  const inviteLink = await generateInvite(groupRef.id, groupData.creatorId);
 
   const privateDoc: PrivateGroupDoc = {
     settings: groupData.settings,
-    inviteLinks: [],
+    inviteLink: inviteLink,
     activityLog: [
       {
         message: `Grupo ${groupData.name} creado por ${creatorUsername}`,
@@ -136,13 +138,8 @@ export async function updateList(
   });
 }
 
-export async function joinGroup(
-  groupId: string,
-  userId: string,
-  tokenId: string
-) {
+export async function joinGroup(userId: string, tokenId: string) {
   const inviteRef = doc(db, "invites", tokenId);
-  const memberRef = doc(db, "groups", groupId, "members", userId);
   const userRef = doc(db, "users", userId);
 
   await runTransaction(db, async (transaction) => {
@@ -152,23 +149,17 @@ export async function joinGroup(
     }
 
     const inviteData = inviteSnap.data() as InviteDoc;
-    if (inviteData.used) throw new Error("Invite already used");
+
+    const memberRef = doc(db, "groups", inviteData.groupId, "members", userId);
 
     transaction.set(memberRef, {
       role: "member",
       joinedAt: new Date(),
       list: { bets: [], points: 0 },
-      inviteId: tokenId,
     });
 
     transaction.update(userRef, {
-      groups: arrayUnion(groupId),
-    });
-
-    transaction.update(inviteRef, {
-      used: true,
-      usedBy: userId,
-      usedAt: new Date(),
+      groups: arrayUnion(inviteData.groupId),
     });
   });
 }

@@ -1,6 +1,13 @@
 import { GroupDoc } from "@/models/Group";
 import { InviteDoc } from "@/models/Invite";
-import { doc, getDoc, setDoc, Timestamp, updateDoc } from "firebase/firestore";
+import {
+  deleteDoc,
+  doc,
+  getDoc,
+  setDoc,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../firebase/clientApp";
 import { getGroupById } from "./groups";
@@ -20,12 +27,16 @@ export async function generateInvite(groupId: string, userId: string) {
     groupId: groupId,
     createdAt: new Date(),
     createdBy: userId,
-    used: false,
   };
   await setDoc(inviteRef, inviteData);
 
+  const prevInviteLink = groupData.inviteLink;
+  const prevInviteRef = doc(db, "invites", prevInviteLink);
+
+  await deleteDoc(prevInviteRef);
+
   await updateDoc(groupRef, {
-    inviteLinks: [...(groupData.invites || []), inviteId],
+    inviteLink: inviteId,
   });
 
   return inviteId;

@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function GroupPage({
   params,
@@ -65,16 +65,17 @@ export default function GroupPage({
     list: BetDoc[];
   } | null>(null);
 
-  useEffect(() => {
-    const initPage = async () => {
-      const { groupId } = await params;
-      if (groupId && currentUser) {
-        const fetchedGroup = await getGroupById(groupId, currentUser?.uid);
-        setGroup(fetchedGroup);
-      }
-    };
-    initPage();
+  const fetchGroupData = useCallback(async () => {
+    const { groupId } = await params;
+    if (groupId && currentUser) {
+      const fetchedGroup = await getGroupById(groupId, currentUser?.uid);
+      setGroup(fetchedGroup);
+    }
   }, [params, currentUser]);
+
+  useEffect(() => {
+    fetchGroupData();
+  }, [fetchGroupData]);
 
   useEffect(() => {
     if (group) {
@@ -464,6 +465,7 @@ export default function GroupPage({
           isOpen={showGroupManagement}
           onClose={() => setShowGroupManagement(false)}
           group={group}
+          reloadGroupData={fetchGroupData}
         />
       )}
 
