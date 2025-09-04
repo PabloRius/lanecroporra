@@ -112,26 +112,44 @@ export default function InvitePage({
     );
   }
 
-  if (error || !groupData || !currentUser) {
+  if (!currentUser) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center">
-              {error?.type === "auth" ? (
-                <CircleChevronDown className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-              ) : (
-                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              )}
-              <h2 className="text-xl font-semibold mb-2">Enlace Inválido</h2>
-              <p className="text-muted-foreground mb-4">{error?.message}</p>
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Sesión no iniciada</h2>
+              <p className="text-muted-foreground mb-4">
+                Inicia sesión para aceptar esta invitación
+              </p>
               <Button
-                onClick={() =>
-                  redirect(error?.type === "auth" ? "/login" : "/dashboard")
-                }
+                onClick={() => redirect(`/login?returnUrl=/invite/${token}`)}
                 className="w-full"
               >
-                {error?.type === "auth" ? "Iniciar Sesión" : "Ir al Dashboard"}
+                Iniciar Sesión
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!groupData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <CircleChevronDown className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+
+              <h2 className="text-xl font-semibold mb-2">Enlace Inválido</h2>
+              <p className="text-muted-foreground mb-4">
+                El enlace ha caducado o es inválido
+              </p>
+              <Button onClick={() => redirect("/dashboard")} className="w-full">
+                Volver al Dashboard
               </Button>
             </div>
           </CardContent>

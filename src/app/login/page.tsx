@@ -6,13 +6,15 @@ import { useAuth } from "@/providers/auth-provider";
 import { ArrowLeft } from "lucide-react";
 
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { redirect, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const { currentUser } = useAuth();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl");
 
   if (currentUser) {
-    redirect("/dashboard");
+    redirect(returnUrl || "/dashboard");
   }
 
   return (
