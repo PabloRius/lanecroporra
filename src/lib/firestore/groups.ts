@@ -156,6 +156,7 @@ export async function joinGroup(userId: string, tokenId: string) {
       role: "member",
       joinedAt: new Date(),
       list: { bets: [], points: 0 },
+      inviteId: tokenId,
     });
 
     transaction.update(userRef, {
