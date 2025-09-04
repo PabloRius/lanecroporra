@@ -7,13 +7,13 @@ import {
 } from "@/models/Group";
 import { InviteDoc } from "@/models/Invite";
 import { ListDoc } from "@/models/List";
+import { UserDoc } from "@/models/User";
 import {
   arrayUnion,
   collection,
   doc,
   getDoc,
   getDocs,
-  runTransaction,
   setDoc,
   Timestamp,
   updateDoc,
@@ -142,25 +142,38 @@ export async function joinGroup(userId: string, tokenId: string) {
   const inviteRef = doc(db, "invites", tokenId);
   const userRef = doc(db, "users", userId);
 
-  await runTransaction(db, async (transaction) => {
-    const inviteSnap = await transaction.get(inviteRef);
-    if (!inviteSnap.exists()) {
-      throw new Error("Invite not found!");
-    }
+  const inviteSnap = await getDoc(inviteRef);
+  const userSnap = await getDoc(userRef);
+  if (!inviteSnap.exists()) {
+    throw new Error("Invite not found!");
+  }
+  const userData = userSnap.data() as UserDoc;
+  if (!userSnap.exists() || !userData) {
+    throw new Error("User not found!");
+  }
 
-    const inviteData = inviteSnap.data() as InviteDoc;
+  const inviteData = inviteSnap.data() as InviteDoc;
 
-    const memberRef = doc(db, "groups", inviteData.groupId, "members", userId);
+  const memberRef = doc(db, "groups", inviteData.groupId, "members", userId);
+  const groupRef = doc(db, "groups", inviteData.groupId, "private", "data");
 
-    transaction.set(memberRef, {
-      role: "member",
-      joinedAt: new Date(),
-      list: { bets: [], points: 0 },
-      inviteId: tokenId,
-    });
+  setDoc(memberRef, {
+    role: "member",
+    joinedAt: new Date(),
+    list: { bets: [], points: 0 },
+    inviteId: tokenId,
+  });
 
-    transaction.update(userRef, {
-      groups: arrayUnion(inviteData.groupId),
-    });
+  updateDoc(userRef, {
+    groups: arrayUnion(inviteData.groupId),
+  });
+
+  const now = Timestamp.now();
+
+  updateDoc(groupRef, {
+    activityLog: arrayUnion({
+      message: `${userData.displayName} se unió al grupo`,
+      timestamp: now,
+    }),
   });
 }

@@ -43,7 +43,17 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
 
         allow update: if request.auth != null
-         && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == "admin";
+  && (
+    get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == "admin"
+    
+    || (
+      request.resource.data.diff(resource.data).changedKeys().hasOnly(["activityLog"])
+      && request.resource.data.activityLog.size() == resource.data.activityLog.size() + 1
+      && request.resource.data.activityLog[resource.data.activityLog.size()].message is string
+      && request.resource.data.activityLog[resource.data.activityLog.size()].timestamp is timestamp
+      && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
+    )
+  );
 
       }
 
