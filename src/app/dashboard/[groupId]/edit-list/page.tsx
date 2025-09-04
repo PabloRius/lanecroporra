@@ -145,7 +145,7 @@ export default function EditListPage({
   const saveList = async () => {
     await updateList(groupId!, currentUser!.uid, currentList);
     setHasChanges(false);
-    redirect("/dashboard");
+    redirect("/dashboard/" + groupId);
   };
 
   if (groupData === undefined || loading) {
@@ -192,7 +192,7 @@ export default function EditListPage({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex flex-col flex-1 h-[dvh] bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4">
@@ -239,9 +239,9 @@ export default function EditListPage({
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto h-full px-4 py-6">
         {/* Current List */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 h-full gap-6">
           <div className="space-y-4 order-1 lg:order-1">
             <Card>
               <CardHeader>
@@ -328,7 +328,7 @@ export default function EditListPage({
           </div>
 
           {/* Search and Add People */}
-          <div className="space-y-4 order-2 lg:order-2">
+          <div className="order-2 lg:order-2 h-full">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Buscar Personas</CardTitle>
@@ -348,7 +348,7 @@ export default function EditListPage({
                     />
                   </div>
 
-                  <div className="max-h-96 overflow-y-auto space-y-2">
+                  <div className="overflow-y-auto space-y-2">
                     {filteredSuggestions.map((person) => {
                       const isInList = currentList.bets.some(
                         (bet) => bet.name === person.name
