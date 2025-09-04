@@ -126,7 +126,7 @@ export default function GroupPage({
     redirect("/login");
   }
 
-  if (!group) {
+  if (!group || !group.private || !group.members) {
     redirect("/dashboard");
   }
 

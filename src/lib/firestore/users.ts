@@ -1,6 +1,13 @@
 import { UserDoc } from "@/models/User";
 import { User } from "firebase/auth";
-import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
+import {
+  arrayRemove,
+  doc,
+  getDoc,
+  setDoc,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "../firebase/clientApp";
 
 export async function getUserById(uid: string): Promise<UserDoc | null> {
@@ -37,4 +44,23 @@ export async function createUser(authUser: User) {
 
     await setDoc(userRef, newUser);
   }
+}
+
+export async function removeGroupFromUser(userId: string, groupId: string) {
+  const userRef = doc(db, "users", userId);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) {
+    throw new Error("User not found");
+  }
+
+  const userData = userSnap.data() as UserDoc;
+
+  if (!userData.groups.includes(groupId)) {
+    return;
+  }
+
+  await updateDoc(userRef, {
+    groups: arrayRemove(groupId),
+  });
 }

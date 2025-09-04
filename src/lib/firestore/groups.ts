@@ -11,6 +11,7 @@ import { UserDoc } from "@/models/User";
 import {
   arrayUnion,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -176,4 +177,26 @@ export async function joinGroup(userId: string, tokenId: string) {
       timestamp: now,
     }),
   });
+}
+
+export async function leaveGroup(userId: string, groupId: string) {
+  const userRef = doc(db, "users", userId);
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.data() as UserDoc;
+  if (!userSnap.exists() || !userData) {
+    throw new Error("User not found!");
+  }
+
+  const memberRef = doc(db, "groups", groupId, "members", userId);
+  const groupRef = doc(db, "groups", groupId, "private", "data");
+
+  const now = Timestamp.now();
+
+  await updateDoc(groupRef, {
+    activityLog: arrayUnion({
+      message: `${userData.displayName} abandonó el grupo`,
+      timestamp: now,
+    }),
+  });
+  await deleteDoc(memberRef);
 }

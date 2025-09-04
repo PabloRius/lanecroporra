@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { getGroupById } from "@/lib/firestore/groups";
-import { getUserById } from "@/lib/firestore/users";
+import { getUserById, removeGroupFromUser } from "@/lib/firestore/users";
 import { GroupDoc } from "@/models/Group";
 import { UserDoc } from "@/models/User";
 import { useAuth } from "@/providers/auth-provider";
@@ -63,7 +63,18 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
       setUserDoc(fetchedUserDoc);
       const fetchedGroups = await Promise.all(
         fetchedUserDoc.groups.map(async (groupId: string) => {
-          return await getGroupById(groupId, currentUser.uid);
+          const fetchedGroup = await getGroupById(groupId, currentUser.uid);
+          console.log(fetchedGroup);
+          if (
+            !fetchedGroup ||
+            !fetchedGroup?.members ||
+            !fetchedGroup.private
+          ) {
+            await removeGroupFromUser(currentUser.uid, groupId);
+            return null;
+          } else {
+            return fetchedGroup;
+          }
         })
       );
       setGroups(fetchedGroups.filter((g): g is GroupDoc => g !== null));

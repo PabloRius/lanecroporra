@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { leaveGroup } from "@/lib/firestore/groups";
 import { generateInvite } from "@/lib/firestore/invites";
 import { GroupDoc } from "@/models/Group";
 import { useAuth } from "@/providers/auth-provider";
@@ -58,30 +59,36 @@ export default function GroupManagementModal({
   reloadGroupData: () => void;
 }) {
   const { currentUser } = useAuth();
+
   const [activeTab, setActiveTab] = useState<
     "invite" | "settings" | "members" | "danger"
   >("invite");
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showKickDialog, setShowKickDialog] = useState<string | null>(null);
 
-  const regenerateInviteLink = async () => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [memberToKick, setMemberToKick] = useState<string | null>(null);
+
+  if (!currentUser) {
+    redirect("/login");
+  }
+
+  // === Actions ===
+  const handleGenerateNewInvite = async () => {
     await generateInvite(group.id, currentUser!.uid);
     reloadGroupData();
   };
 
-  const kickMember = (memberId: string) => {
-    // Implementation for kicking member
-    console.log("Kicking member:", memberId);
-    setShowKickDialog(null);
+  const handleConfirmKickMember = (memberId: string) => {
+    leaveGroup(memberId, group.id);
+    setMemberToKick(null);
   };
 
-  const deleteGroup = () => {
-    // Implementation for deleting group
+  const handleConfirmDeleteGroup = () => {
     console.log("Deleting group:", group.id);
-    setShowDeleteDialog(false);
+    setDeleteDialogOpen(false);
     onClose();
   };
 
+  // === Sidebar Tabs ===
   const tabs = [
     { id: "invite", label: "Invitaciones", icon: Link },
     { id: "settings", label: "Configuración", icon: Settings },
@@ -89,16 +96,13 @@ export default function GroupManagementModal({
     { id: "danger", label: "Zona Peligrosa", icon: Trash2 },
   ];
 
-  if (!currentUser) {
-    redirect("/login");
-  }
-
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      {/* Main Modal */}
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="sm:w-[50vw] sm:max-w-none h-[50vh] p-0">
           <div className="flex flex-col lg:flex-row h-full max-h-[80vh] sm:w-[43vw] sm:max-w-none">
-            {/* Sidebar - Vertical on desktop, horizontal on mobile */}
+            {/* Sidebar */}
             <div className="lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-muted/20">
               <DialogHeader className="p-4 lg:p-6 border-b border-border lg:border-b-0">
                 <DialogTitle className="text-lg lg:text-xl">
@@ -146,7 +150,7 @@ export default function GroupManagementModal({
                   <div className="space-y-4">
                     <h4 className="font-medium mb-2">Invitaciones Activas</h4>
                     <Button
-                      onClick={regenerateInviteLink}
+                      onClick={handleGenerateNewInvite}
                       variant="outline"
                       className="bg-transparent"
                     >
@@ -164,7 +168,6 @@ export default function GroupManagementModal({
                     <h3 className="text-lg font-semibold">
                       Configuración del Grupo
                     </h3>
-
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="group-name">Nombre del Grupo</Label>
@@ -174,7 +177,6 @@ export default function GroupManagementModal({
                           className="mt-2"
                         />
                       </div>
-
                       <div>
                         <Label htmlFor="group-description">Descripción</Label>
                         <Textarea
@@ -184,7 +186,6 @@ export default function GroupManagementModal({
                           rows={3}
                         />
                       </div>
-
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="flex flex-col justify-between">
                           <Label htmlFor="max-bets">Máximo de Apuestas</Label>
@@ -195,7 +196,6 @@ export default function GroupManagementModal({
                             className="mt-2"
                           />
                         </div>
-
                         <div className="flex flex-col justify-between">
                           <Label htmlFor="deadline">Fecha Límite</Label>
                           <Input
@@ -208,7 +208,6 @@ export default function GroupManagementModal({
                           />
                         </div>
                       </div>
-
                       <Button className="w-full sm:w-auto">
                         Guardar Cambios
                       </Button>
@@ -221,13 +220,13 @@ export default function GroupManagementModal({
                     <h3 className="text-lg font-semibold">
                       Miembros del Grupo
                     </h3>
-
                     <div className="space-y-3">
-                      {Object.keys(group.members!).map((member) => {
-                        const isAdmin = group.members![member].role === "admin";
+                      {Object.keys(group.members!).map((memberId) => {
+                        const isAdmin =
+                          group.members![memberId].role === "admin";
                         return (
                           <div
-                            key={member}
+                            key={memberId}
                             className="flex items-center justify-between p-3 border border-border rounded-lg"
                           >
                             <div className="flex items-center gap-3">
@@ -238,16 +237,13 @@ export default function GroupManagementModal({
                                   <User className="w-4 h-4 text-gray-500" />
                                 )}
                               </div>
-                              <div>
-                                <ResolveUserId userId={member} />
-                              </div>
+                              <ResolveUserId userId={memberId} />
                             </div>
-
                             {!isAdmin && (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => setShowKickDialog(member)}
+                                onClick={() => setMemberToKick(memberId)}
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
                               >
                                 <UserMinus className="w-4 h-4" />
@@ -265,7 +261,6 @@ export default function GroupManagementModal({
                     <h3 className="text-lg font-semibold text-red-600 dark:text-red-400">
                       Zona Peligrosa
                     </h3>
-
                     <Card className="border-red-200 dark:border-red-800">
                       <CardHeader>
                         <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
@@ -281,7 +276,7 @@ export default function GroupManagementModal({
                       <CardContent>
                         <Button
                           variant="destructive"
-                          onClick={() => setShowDeleteDialog(true)}
+                          onClick={() => setDeleteDialogOpen(true)}
                           className="w-full sm:w-auto"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
@@ -299,8 +294,8 @@ export default function GroupManagementModal({
 
       {/* Kick Member Dialog */}
       <AlertDialog
-        open={showKickDialog !== null}
-        onOpenChange={() => setShowKickDialog(null)}
+        open={!!memberToKick}
+        onOpenChange={(open) => !open && setMemberToKick(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -311,9 +306,13 @@ export default function GroupManagementModal({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setMemberToKick(null)}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => showKickDialog && kickMember(showKickDialog)}
+              onClick={() =>
+                memberToKick && handleConfirmKickMember(memberToKick)
+              }
               className="bg-red-600 hover:bg-red-700"
             >
               Expulsar
@@ -323,7 +322,7 @@ export default function GroupManagementModal({
       </AlertDialog>
 
       {/* Delete Group Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -336,9 +335,11 @@ export default function GroupManagementModal({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={deleteGroup}
+              onClick={handleConfirmDeleteGroup}
               className="bg-red-600 hover:bg-red-700"
             >
               Eliminar Permanentemente
