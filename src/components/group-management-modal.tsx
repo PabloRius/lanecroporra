@@ -28,7 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { leaveGroup, updateGroup } from "@/lib/firestore/groups";
+import { deleteGroup, leaveGroup, updateGroup } from "@/lib/firestore/groups";
 import { generateInvite } from "@/lib/firestore/invites";
 import { GroupDoc, UpdateGroupDoc } from "@/models/Group";
 import { useAuth } from "@/providers/auth-provider";
@@ -91,9 +91,10 @@ export default function GroupManagementModal({
     reloadGroupData();
   };
 
-  const handleConfirmDeleteGroup = () => {
-    console.log("Deleting group:", group.id);
+  const handleConfirmDeleteGroup = async () => {
+    await deleteGroup(group.id);
     setDeleteDialogOpen(false);
+    reloadGroupData();
     onClose();
   };
 

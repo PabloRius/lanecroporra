@@ -218,3 +218,28 @@ export async function updateGroup(
     },
   });
 }
+
+export async function deleteGroup(groupId: string) {
+  const groupRef = doc(db, "groups", groupId);
+  const publicGroupRef = doc(db, "groups", groupId, "public", "data");
+  const privateGroupRef = doc(db, "groups", groupId, "private", "data");
+
+  const privateSnap = await getDoc(privateGroupRef);
+  if (privateSnap.exists()) {
+    const privateData = privateSnap.data() as { inviteLink?: string };
+
+    if (privateData.inviteLink) {
+      const inviteRef = doc(db, "invites", privateData.inviteLink);
+      await deleteDoc(inviteRef);
+    }
+  }
+
+  await deleteDoc(publicGroupRef);
+  await deleteDoc(privateGroupRef);
+
+  const membersColRef = collection(db, "groups", groupId, "members");
+  const membersSnap = await getDocs(membersColRef);
+  for (const member of membersSnap.docs) {
+    await deleteDoc(member.ref);
+  }
+}
