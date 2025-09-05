@@ -21,7 +21,6 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/clientApp";
-import { generateInvite } from "./invites";
 import { resolveUserId } from "./users";
 
 export async function getGroupById(
@@ -79,7 +78,7 @@ export async function createGroup(
   groupData: Omit<PublicGroupDoc, "id" | "status"> & {
     settings: PrivateGroupDoc["settings"];
   }
-) {
+): Promise<{ groupId: string }> {
   const groupRef = doc(collection(db, "groups"));
 
   const publicDoc: PublicGroupDoc = {
@@ -93,11 +92,9 @@ export async function createGroup(
 
   const creatorUsername = await resolveUserId(groupData.creatorId);
   const now = Timestamp.now();
-  const inviteLink = await generateInvite(groupRef.id, groupData.creatorId);
 
   const privateDoc: PrivateGroupDoc = {
     settings: groupData.settings,
-    inviteLink: inviteLink,
     activityLog: [
       {
         message: `Grupo ${groupData.name} creado por ${creatorUsername}`,
@@ -126,6 +123,8 @@ export async function createGroup(
   await updateDoc(userRef, {
     groups: arrayUnion(groupRef.id),
   });
+
+  return { groupId: groupRef.id };
 }
 
 export async function updateList(

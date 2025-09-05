@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createGroup } from "@/lib/firestore/groups";
 import { useAuth } from "@/providers/auth-provider";
+import { useSidebar } from "@/providers/sidebar-provider";
 import { ArrowLeft, ArrowRight, Settings, Users } from "lucide-react";
 import { redirect } from "next/navigation";
 import { useState } from "react";
@@ -26,18 +27,20 @@ export default function CreateGroup() {
     maxBets: 10,
     deadline: `${new Date().getFullYear()}-12-31`,
   });
+  const { reloadGroups } = useSidebar();
 
   const handleNext = async () => {
     if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
     } else {
-      await createGroup({
+      const { groupId } = await createGroup({
         ...groupData,
         creatorId: currentUser!.uid,
         deadline: new Date(groupData.deadline),
         settings: { maxBets: groupData.maxBets },
       });
-      redirect("/dashboard");
+      reloadGroups();
+      redirect(`/dashboard/${groupId}`);
     }
   };
 
@@ -54,8 +57,8 @@ export default function CreateGroup() {
   const isStep2Valid = groupData.maxBets > 0 && groupData.deadline !== "";
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen flex flex-1 bg-background p-4 sm:p-6 lg:p-8">
+      <div className="max-w-2xl w-full mx-auto">
         {/* Header */}
         <div className="mb-6">
           <Button

@@ -25,7 +25,7 @@ export interface PrivateGroupDoc {
   settings: {
     maxBets: number;
   };
-  inviteLink: string;
+  inviteLink?: string;
   activityLog: Log[];
 }
 

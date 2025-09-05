@@ -191,7 +191,9 @@ export default function GroupManagementModal({
                       Generar Nuevo Enlace
                     </Button>
                     <div className="space-y-2 max-w-min overflow-hidden">
-                      <InviteCard tokenId={group.private!.inviteLink} />
+                      {group.private?.inviteLink && (
+                        <InviteCard tokenId={group.private!.inviteLink} />
+                      )}
                     </div>
                   </div>
                 )}

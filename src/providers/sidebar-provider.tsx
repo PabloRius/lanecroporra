@@ -19,18 +19,26 @@ import {
 import { Label } from "@radix-ui/react-label";
 import { Loader2, Plus, UserPlus, Users, X } from "lucide-react";
 import { redirect, useParams, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 interface SidebarContextValue {
   toggle: () => void;
   setOpen: () => void;
   setClose: () => void;
+  reloadGroups: () => void;
 }
 
 const SidebarContext = createContext<SidebarContextValue>({
   toggle: () => {},
   setOpen: () => {},
   setClose: () => {},
+  reloadGroups: () => {},
 });
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
@@ -47,40 +55,37 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const currentGroupId = params.groupId as string;
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!currentUser) {
-        setUserDoc(null);
-        setGroups([]);
-        return;
-      }
-      const fetchedUserDoc = await getUserById(currentUser.uid);
-      if (!fetchedUserDoc) {
-        setUserDoc(null);
-        setGroups([]);
-        return;
-      }
-      setUserDoc(fetchedUserDoc);
-      const fetchedGroups = await Promise.all(
-        fetchedUserDoc.groups.map(async (groupId: string) => {
-          const fetchedGroup = await getGroupById(groupId, currentUser.uid);
-          console.log(fetchedGroup);
-          if (
-            !fetchedGroup ||
-            !fetchedGroup?.members ||
-            !fetchedGroup.private
-          ) {
-            await removeGroupFromUser(currentUser.uid, groupId);
-            return null;
-          } else {
-            return fetchedGroup;
-          }
-        })
-      );
-      setGroups(fetchedGroups.filter((g): g is GroupDoc => g !== null));
+  const fetchData = useCallback(async () => {
+    if (!currentUser) {
+      setUserDoc(null);
+      setGroups([]);
+      return;
     }
-    fetchData();
+    const fetchedUserDoc = await getUserById(currentUser.uid);
+    if (!fetchedUserDoc) {
+      setUserDoc(null);
+      setGroups([]);
+      return;
+    }
+    setUserDoc(fetchedUserDoc);
+    const fetchedGroups = await Promise.all(
+      fetchedUserDoc.groups.map(async (groupId: string) => {
+        const fetchedGroup = await getGroupById(groupId, currentUser.uid);
+        console.log(fetchedGroup);
+        if (!fetchedGroup || !fetchedGroup?.members || !fetchedGroup.private) {
+          await removeGroupFromUser(currentUser.uid, groupId);
+          return null;
+        } else {
+          return fetchedGroup;
+        }
+      })
+    );
+    setGroups(fetchedGroups.filter((g): g is GroupDoc => g !== null));
   }, [currentUser]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (loading || userDoc === undefined) {
     return (
@@ -112,7 +117,9 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SidebarContext.Provider value={{ toggle, setOpen, setClose }}>
+    <SidebarContext.Provider
+      value={{ toggle, setOpen, setClose, reloadGroups: fetchData }}
+    >
       <div className="flex h-screen bg-background relative">
         {isOpen && (
           <div
