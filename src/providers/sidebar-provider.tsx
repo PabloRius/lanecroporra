@@ -154,7 +154,10 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
               <Button
                 size="sm"
                 className="flex-1"
-                onClick={() => redirect("/dashboard/create-group")}
+                onClick={() => {
+                  setClose();
+                  redirect("/dashboard/create-group");
+                }}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Crear
