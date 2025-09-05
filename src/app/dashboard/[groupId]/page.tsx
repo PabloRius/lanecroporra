@@ -28,6 +28,7 @@ import { UserDoc } from "@/models/User";
 import { useAuth } from "@/providers/auth-provider";
 import { useSidebar } from "@/providers/sidebar-provider";
 import {
+  AlertCircle,
   Calendar,
   EyeOff,
   Loader2,
@@ -314,16 +315,22 @@ export default function GroupPage({
 
           <div className="flex-1 p-4 lg:p-6 overflow-y-auto lg:pt-6 ">
             <div className="grid gap-4 lg:gap-6">
-              {/* My List Section */}
               <Card>
                 <CardHeader className="pb-3 lg:pb-6">
                   <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <span>Mi Lista</span>
                     <Button size="sm" className="w-full sm:w-auto" asChild>
-                      <Link href={group.id + "/edit-list"}>
+                      <Link
+                        href={group.id + "/edit-list"}
+                        className="flex items-center gap-1"
+                      >
                         {group.public.status === "draft"
                           ? "Editar Lista"
                           : "Ver Lista"}
+                        {/* Warning if any deceased before deadline */}
+                        {group.members![user.uid].list.bets.some(
+                          (p) => p.status === "deceased"
+                        ) && <AlertCircle className="w-4 h-4 text-red-600" />}
                       </Link>
                     </Button>
                   </CardTitle>
@@ -335,7 +342,7 @@ export default function GroupPage({
                   {group.members![user.uid] &&
                   Object.keys(group.members![user.uid].list).length > 0 ? (
                     <div className="space-y-3">
-                      {Object.values(group.members![user.uid].list.bets).map(
+                      {group.members![user.uid].list.bets.map(
                         (person, index) => (
                           <div
                             key={index}
@@ -344,13 +351,13 @@ export default function GroupPage({
                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
                               {index + 1}
                             </div>
-                            <div className="min-w-0 flex-1">
+                            <div className="min-w-0 flex-1 flex items-center justify-between">
                               <p className="font-medium text-sm lg:text-base truncate">
                                 {person.name}
                               </p>
-                              {/* <p className="text-xs lg:text-sm text-muted-foreground">
-                                {person.profession} • {person.age} años
-                              </p> */}
+                              {person.status === "deceased" && (
+                                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                              )}
                             </div>
                           </div>
                         )
