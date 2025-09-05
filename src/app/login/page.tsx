@@ -3,12 +3,27 @@
 import { AuthCard } from "@/components/auth-card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/providers/auth-provider";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 import Link from "next/link";
 import { redirect, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function LoginPage() {
+export default function LoginPageWrapped() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-1 w-full items-center justify-center">
+          <Loader2 className="animate-spin" />
+        </div>
+      }
+    >
+      <LoginPage />
+    </Suspense>
+  );
+}
+
+function LoginPage() {
   const { currentUser } = useAuth();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get("returnUrl");
