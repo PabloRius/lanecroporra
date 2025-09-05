@@ -4,6 +4,7 @@ import {
   MembersMap,
   PrivateGroupDoc,
   PublicGroupDoc,
+  UpdateGroupDoc,
 } from "@/models/Group";
 import { InviteDoc } from "@/models/Invite";
 import { ListDoc } from "@/models/List";
@@ -199,4 +200,22 @@ export async function leaveGroup(userId: string, groupId: string) {
     }),
   });
   await deleteDoc(memberRef);
+}
+
+export async function updateGroup(
+  groupId: string,
+  newGroupData: UpdateGroupDoc
+) {
+  const publicGroupRef = doc(db, "groups", groupId, "public", "data");
+  const privateGroupRef = doc(db, "groups", groupId, "private", "data");
+  await updateDoc(publicGroupRef, {
+    name: newGroupData.public?.name,
+    description: newGroupData.public?.description,
+    deadline: newGroupData.public?.deadline,
+  });
+  await updateDoc(privateGroupRef, {
+    settings: {
+      maxBets: newGroupData.private?.settings?.maxBets,
+    },
+  });
 }

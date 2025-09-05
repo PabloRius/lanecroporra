@@ -28,9 +28,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { leaveGroup } from "@/lib/firestore/groups";
+import { leaveGroup, updateGroup } from "@/lib/firestore/groups";
 import { generateInvite } from "@/lib/firestore/invites";
-import { GroupDoc } from "@/models/Group";
+import { GroupDoc, UpdateGroupDoc } from "@/models/Group";
 import { useAuth } from "@/providers/auth-provider";
 import {
   Crown,
@@ -67,6 +67,14 @@ export default function GroupManagementModal({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToKick, setMemberToKick] = useState<string | null>(null);
 
+  const [groupName, setGroupName] = useState(group.public.name);
+  const [groupDescription, setGroupDescription] = useState(
+    group.public.description
+  );
+  const [maxBets, setMaxBets] = useState(group.private!.settings.maxBets);
+  const [deadline, setDeadline] = useState(group.public.deadline);
+  const [saving, setSaving] = useState(false);
+
   if (!currentUser) {
     redirect("/login");
   }
@@ -87,6 +95,30 @@ export default function GroupManagementModal({
     console.log("Deleting group:", group.id);
     setDeleteDialogOpen(false);
     onClose();
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      setSaving(true);
+      const updatedGroup: UpdateGroupDoc = {
+        public: {
+          name: groupName,
+          description: groupDescription,
+          deadline: deadline,
+        },
+        private: {
+          settings: {
+            maxBets: maxBets,
+          },
+        },
+      };
+      await updateGroup(group.id, updatedGroup);
+      reloadGroupData();
+    } catch (error) {
+      console.error("Error updating group: ", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // === Sidebar Tabs ===
@@ -174,7 +206,10 @@ export default function GroupManagementModal({
                         <Label htmlFor="group-name">Nombre del Grupo</Label>
                         <Input
                           id="group-name"
-                          defaultValue={group.public.name}
+                          value={groupName}
+                          onChange={(e) => {
+                            setGroupName(e.target.value);
+                          }}
                           className="mt-2"
                         />
                       </div>
@@ -182,7 +217,10 @@ export default function GroupManagementModal({
                         <Label htmlFor="group-description">Descripción</Label>
                         <Textarea
                           id="group-description"
-                          defaultValue={group.public.description}
+                          value={groupDescription}
+                          onChange={(e) => {
+                            setGroupDescription(e.target.value);
+                          }}
                           className="mt-2 resize-none max-h-[20vh] overflow-auto"
                           rows={3}
                         />
@@ -193,7 +231,10 @@ export default function GroupManagementModal({
                           <Input
                             id="max-bets"
                             type="number"
-                            defaultValue={group.private!.settings.maxBets}
+                            value={maxBets}
+                            onChange={(e) =>
+                              setMaxBets(parseInt(e.target.value))
+                            }
                             className="mt-2"
                           />
                         </div>
@@ -202,15 +243,20 @@ export default function GroupManagementModal({
                           <Input
                             id="deadline"
                             type="date"
-                            defaultValue={
-                              group.public.deadline.toISOString().split("T")[0]
+                            value={deadline.toISOString().split("T")[0]}
+                            onChange={(e) =>
+                              setDeadline(new Date(e.target.value))
                             }
                             className="mt-2"
                           />
                         </div>
                       </div>
-                      <Button className="w-full sm:w-auto">
-                        Guardar Cambios
+                      <Button
+                        onClick={handleSaveChanges}
+                        disabled={saving}
+                        className="w-full sm:w-auto"
+                      >
+                        {saving ? "Guardando..." : "Guardar Cambios"}
                       </Button>
                     </div>
                   </div>
