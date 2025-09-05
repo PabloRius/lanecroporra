@@ -330,3 +330,16 @@ export async function setNameStatusAcrossGroup(
     await batch.commit();
   }
 }
+
+export async function promoteToAdmin(groupId: string, memberId: string) {
+  const memberRef = doc(db, "groups", groupId, "members", memberId);
+
+  try {
+    await updateDoc(memberRef, {
+      role: "admin",
+    });
+  } catch (error) {
+    console.error("Error promoting member to admin:", error);
+    throw error;
+  }
+}

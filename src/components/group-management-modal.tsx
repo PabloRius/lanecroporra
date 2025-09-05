@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   deleteGroup,
   leaveGroup,
+  promoteToAdmin,
   setNameStatusAcrossGroup,
   updateGroup,
 } from "@/lib/firestore/groups";
@@ -44,6 +45,7 @@ import {
   ListChecks,
   RefreshCw,
   Settings,
+  ShieldCheck,
   Trash2,
   User,
   UserMinus,
@@ -134,16 +136,16 @@ export default function GroupManagementModal({
     { id: "invite", label: "Invitaciones", icon: Link },
     { id: "settings", label: "Configuración", icon: Settings },
     { id: "members", label: "Miembros", icon: Users },
-    { id: "danger", label: "Zona Peligrosa", icon: Trash2 },
     { id: "lists", label: "Listas", icon: ListChecks },
+    { id: "danger", label: "Zona Peligrosa", icon: Trash2 },
   ];
 
   return (
     <>
       {/* Main Modal */}
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="sm:w-auto sm:max-w-none h-[50vh] max-h-[50vh] p-0">
-          <div className="flex flex-col lg:flex-row h-full max-h-full overflow-y-hidden sm:w-[43vw] sm:max-w-none">
+        <DialogContent className="sm:w-[55vw] sm:max-w-none h-[50vh] max-h-[50vh] p-0">
+          <div className="flex flex-col lg:flex-row h-full max-h-full overflow-y-hidden sm:max-w-none">
             {/* Sidebar */}
             <div className="lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-muted/20">
               <DialogHeader className="p-4 lg:p-6 border-b border-border lg:border-b-0">
@@ -274,14 +276,18 @@ export default function GroupManagementModal({
                 )}
 
                 {activeTab === "members" && (
-                  <div className="space-y-6">
+                  <div className="space-y-6 flex-1">
                     <h3 className="text-lg font-semibold">
                       Miembros del Grupo
                     </h3>
                     <div className="space-y-3">
                       {Object.keys(group.members!).map((memberId) => {
-                        const isAdmin =
-                          group.members![memberId].role === "admin";
+                        const member = group.members![memberId];
+                        const isAdmin = member.role === "admin";
+                        const isCreator = memberId === group.public.creatorId;
+                        const isCurrentUserAdmin =
+                          group.members![currentUser!.uid]?.role === "admin";
+
                         return (
                           <div
                             key={memberId}
@@ -289,24 +295,44 @@ export default function GroupManagementModal({
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                {isAdmin ? (
+                                {isCreator ? (
                                   <Crown className="w-4 h-4 text-yellow-500" />
+                                ) : isAdmin ? (
+                                  <ShieldCheck className="w-4 h-4 text-blue-500" />
                                 ) : (
                                   <User className="w-4 h-4 text-gray-500" />
                                 )}
                               </div>
                               <ResolveUserId userId={memberId} />
                             </div>
-                            {!isAdmin && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setMemberToKick(memberId)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
-                              >
-                                <UserMinus className="w-4 h-4" />
-                              </Button>
-                            )}
+
+                            <div className="flex gap-2">
+                              {/* Promote to Admin button (only if not admin and current user is admin) */}
+                              {!isAdmin && isCurrentUserAdmin && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    await promoteToAdmin(group.id, memberId);
+                                    reloadGroupData();
+                                  }}
+                                >
+                                  Promover a Admin
+                                </Button>
+                              )}
+
+                              {/* Kick button only if not admin */}
+                              {!isAdmin && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setMemberToKick(memberId)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                >
+                                  <UserMinus className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -315,7 +341,7 @@ export default function GroupManagementModal({
                 )}
 
                 {activeTab === "danger" && (
-                  <div className="space-y-6">
+                  <div className="space-y-6 flex-1">
                     <h3 className="text-lg font-semibold text-red-600 dark:text-red-400">
                       Zona Peligrosa
                     </h3>
@@ -425,9 +451,9 @@ export default function GroupManagementModal({
                             return (
                               <div
                                 key={key}
-                                className="flex flex-col w-full items-center justify-between p-3 border rounded-lg"
+                                className="flex flex-col w-4/5 mx-auto mt-2 items-center justify-between p-3 border rounded-lg"
                               >
-                                <div className="min-w-0">
+                                <div className="w-full flex-1">
                                   <p
                                     className={`font-medium truncate ${
                                       allDeceased
