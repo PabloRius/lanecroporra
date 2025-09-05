@@ -4,4 +4,5 @@ export interface UserDoc {
   displayName: string;
   createdAt: Date;
   groups: Array<string>;
+  role?: string;
 }

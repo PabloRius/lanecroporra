@@ -299,7 +299,7 @@ export default function EditListPage({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => redirect("/dashboard")}
+                onClick={() => redirect(`/dashboard/${groupId}`)}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Volver

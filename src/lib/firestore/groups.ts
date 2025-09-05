@@ -21,6 +21,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/clientApp";
+import { updateRecord } from "./review-record";
 import { resolveUserId } from "./users";
 
 export async function getGroupById(
@@ -130,13 +131,45 @@ export async function createGroup(
 export async function updateList(
   groupId: string,
   userId: string,
-  list: ListDoc
+  newList: ListDoc
 ) {
   const memberRef = doc(db, "groups", groupId, "members", userId);
 
-  await updateDoc(memberRef, {
-    list,
-  });
+  // Get old list
+  const memberSnap = await getDoc(memberRef);
+  const oldList = memberSnap.exists()
+    ? (memberSnap.data()?.list as ListDoc)
+    : { bets: [] };
+
+  const oldNames = new Set(oldList.bets.map((bet) => bet.name) || []);
+  const newNames = new Set(newList.bets.map((bet) => bet.name) || []);
+
+  // Detect additions
+  const added = [...newNames].filter((name) => !oldNames.has(name));
+  // Detect removals
+  const removed = [...oldNames].filter((name) => !newNames.has(name));
+
+  // Process additions
+  for (const name of added) {
+    console.log("adding: ", name);
+    await updateRecord(name, userId, groupId);
+  }
+
+  // Process removals
+  for (const name of removed) {
+    console.log("removing: ", name);
+    const listRef = doc(
+      db,
+      "review-record",
+      name,
+      "lists",
+      `${userId}_${groupId}`
+    );
+    await deleteDoc(listRef);
+  }
+
+  // Finally update the list in member doc
+  await updateDoc(memberRef, { list: newList });
 }
 
 export async function joinGroup(userId: string, tokenId: string) {
@@ -220,7 +253,6 @@ export async function updateGroup(
 }
 
 export async function deleteGroup(groupId: string) {
-  const groupRef = doc(db, "groups", groupId);
   const publicGroupRef = doc(db, "groups", groupId, "public", "data");
   const privateGroupRef = doc(db, "groups", groupId, "private", "data");
 
