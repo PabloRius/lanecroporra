@@ -1,3 +1,4 @@
+import { BetDoc } from "@/models/Bet";
 import {
   GroupDoc,
   MemberDoc,
@@ -19,6 +20,7 @@ import {
   setDoc,
   Timestamp,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebase/clientApp";
 import { updateRecord } from "./review-record";
@@ -273,5 +275,58 @@ export async function deleteGroup(groupId: string) {
   const membersSnap = await getDocs(membersColRef);
   for (const member of membersSnap.docs) {
     await deleteDoc(member.ref);
+  }
+}
+
+const normalize = (s: string) =>
+  s
+    .normalize("NFKD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim()
+    .toLowerCase();
+
+export async function setNameStatusAcrossGroup(
+  groupId: string,
+  name: string,
+  status: "alive" | "deceased"
+) {
+  const target = normalize(name);
+  const membersCol = collection(db, "groups", groupId, "members");
+  const snap = await getDocs(membersCol);
+
+  // Gather updates
+  const updates: Array<{ ref: ReturnType<typeof doc>; list: ListDoc }> = [];
+
+  snap.forEach((memberSnap) => {
+    const data = memberSnap.data() as MemberDoc | undefined;
+    if (!data?.list?.bets?.length) return;
+
+    let changed = false;
+    const newBets: BetDoc[] = data.list.bets.map((b) => {
+      if (normalize(b.name) === target && b.status !== status) {
+        changed = true;
+        return { ...b, status };
+      }
+      return b;
+    });
+
+    if (changed) {
+      updates.push({
+        ref: memberSnap.ref,
+        list: { ...data.list, bets: newBets },
+      });
+    }
+  });
+
+  if (!updates.length) return;
+
+  // Commit in batches (max 500 ops, stay conservative)
+  const CHUNK = 400;
+  for (let i = 0; i < updates.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    for (const u of updates.slice(i, i + CHUNK)) {
+      batch.update(u.ref, { list: u.list });
+    }
+    await batch.commit();
   }
 }

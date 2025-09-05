@@ -28,13 +28,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { deleteGroup, leaveGroup, updateGroup } from "@/lib/firestore/groups";
+import {
+  deleteGroup,
+  leaveGroup,
+  setNameStatusAcrossGroup,
+  updateGroup,
+} from "@/lib/firestore/groups";
 import { generateInvite } from "@/lib/firestore/invites";
 import { GroupDoc, UpdateGroupDoc } from "@/models/Group";
 import { useAuth } from "@/providers/auth-provider";
 import {
+  Ban,
   Crown,
   Link,
+  ListChecks,
   RefreshCw,
   Settings,
   Trash2,
@@ -61,7 +68,7 @@ export default function GroupManagementModal({
   const { currentUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState<
-    "invite" | "settings" | "members" | "danger"
+    "invite" | "settings" | "members" | "danger" | "lists"
   >("invite");
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -128,14 +135,15 @@ export default function GroupManagementModal({
     { id: "settings", label: "Configuración", icon: Settings },
     { id: "members", label: "Miembros", icon: Users },
     { id: "danger", label: "Zona Peligrosa", icon: Trash2 },
+    { id: "lists", label: "Listas", icon: ListChecks },
   ];
 
   return (
     <>
       {/* Main Modal */}
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="sm:w-[50vw] sm:max-w-none h-[50vh] p-0">
-          <div className="flex flex-col lg:flex-row h-full max-h-[80vh] sm:w-[43vw] sm:max-w-none">
+        <DialogContent className="sm:w-auto sm:max-w-none h-[50vh] max-h-[50vh] p-0">
+          <div className="flex flex-col lg:flex-row h-full max-h-full overflow-y-hidden sm:w-[43vw] sm:max-w-none">
             {/* Sidebar */}
             <div className="lg:w-64 border-b lg:border-b-0 lg:border-r border-border bg-muted/20">
               <DialogHeader className="p-4 lg:p-6 border-b border-border lg:border-b-0">
@@ -178,8 +186,8 @@ export default function GroupManagementModal({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-4 lg:p-6">
+            <div className="flex flex-1 w-full max-h-full ">
+              <div className="flex flex-1 w-full p-4 lg:p-6 ">
                 {activeTab === "invite" && (
                   <div className="space-y-4">
                     <h4 className="font-medium mb-2">Invitaciones Activas</h4>
@@ -334,6 +342,153 @@ export default function GroupManagementModal({
                         </Button>
                       </CardContent>
                     </Card>
+                  </div>
+                )}
+
+                {activeTab === "lists" && (
+                  <div className="flex flex-col h-full">
+                    {/* Header stays visible */}
+                    <div className="mb-2">
+                      <h3 className="text-lg font-semibold">
+                        Gestión de Listas (Admin)
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Marca un nombre como fallecido en todas las listas de
+                        este grupo.
+                      </p>
+                    </div>
+
+                    {/* Scrollable rows */}
+                    <div className="flex-1 overflow-y-auto space-y-2">
+                      {(() => {
+                        const summary = new Map<
+                          string,
+                          { total: number; deceased: number; alive: number }
+                        >();
+                        const norm = (s: string) =>
+                          s
+                            .normalize("NFKD")
+                            .replace(/\p{Diacritic}/gu, "")
+                            .trim()
+                            .toLowerCase();
+
+                        for (const memberId of Object.keys(
+                          group.members ?? {}
+                        )) {
+                          const m = group.members![memberId];
+                          for (const bet of m.list?.bets ?? []) {
+                            const key = norm(bet.name);
+                            const current = summary.get(key) ?? {
+                              total: 0,
+                              deceased: 0,
+                              alive: 0,
+                            };
+                            current.total += 1;
+                            if (bet.status === "deceased")
+                              current.deceased += 1;
+                            else current.alive += 1;
+                            summary.set(key, current);
+                          }
+                        }
+
+                        const displayNameByKey = new Map<string, string>();
+                        for (const memberId of Object.keys(
+                          group.members ?? {}
+                        )) {
+                          const m = group.members![memberId];
+                          for (const bet of m.list?.bets ?? []) {
+                            const key = norm(bet.name);
+                            if (!displayNameByKey.has(key))
+                              displayNameByKey.set(key, bet.name);
+                          }
+                        }
+
+                        const rows = Array.from(summary.entries())
+                          .map(([key, stats]) => ({
+                            key,
+                            displayName: displayNameByKey.get(key) ?? key,
+                            ...stats,
+                          }))
+                          .sort((a, b) => b.total - a.total);
+
+                        if (!rows.length) {
+                          return (
+                            <div className="text-sm text-muted-foreground">
+                              No hay apuestas en las listas aún.
+                            </div>
+                          );
+                        }
+
+                        return rows.map(
+                          ({ key, displayName, total, deceased, alive }) => {
+                            const allDeceased = deceased === total;
+                            return (
+                              <div
+                                key={key}
+                                className="flex flex-col w-full items-center justify-between p-3 border rounded-lg"
+                              >
+                                <div className="min-w-0">
+                                  <p
+                                    className={`font-medium truncate ${
+                                      allDeceased
+                                        ? "line-through text-red-600"
+                                        : ""
+                                    }`}
+                                  >
+                                    {displayName}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Total: {total} • Vivos: {alive} •
+                                    Fallecidos: {deceased}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    disabled={allDeceased}
+                                    onClick={async () => {
+                                      await setNameStatusAcrossGroup(
+                                        group.id,
+                                        displayName,
+                                        "deceased"
+                                      );
+                                      reloadGroupData();
+                                    }}
+                                    className="flex items-center gap-2"
+                                    title={
+                                      allDeceased
+                                        ? "Ya está marcado como fallecido en todas las listas"
+                                        : "Marcar como fallecido en todas las listas"
+                                    }
+                                  >
+                                    <Ban className="w-4 h-4" />
+                                    Marcar fallecido
+                                  </Button>
+
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={alive === total}
+                                    onClick={async () => {
+                                      await setNameStatusAcrossGroup(
+                                        group.id,
+                                        displayName,
+                                        "alive"
+                                      );
+                                      reloadGroupData();
+                                    }}
+                                  >
+                                    Marcar vivo
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          }
+                        );
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
