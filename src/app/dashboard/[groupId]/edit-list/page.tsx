@@ -11,6 +11,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useDebounce } from "@/hooks/useDebounce";
 import { getGroupById, updateList } from "@/lib/firestore/groups";
 import { BetDoc } from "@/models/Bet";
 import { GroupDoc } from "@/models/Group";
@@ -19,6 +26,7 @@ import { useAuth } from "@/providers/auth-provider";
 import {
   AlertCircle,
   ArrowLeft,
+  Ban,
   Calendar,
   CheckCircle,
   Loader2,
@@ -31,16 +39,14 @@ import {
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// Mock famous people suggestions
-const mockSuggestions = [
-  { id: 4, name: "Morgan Freeman", age: 86, profession: "Actor" },
-  { id: 5, name: "Anthony Hopkins", age: 86, profession: "Actor" },
-  { id: 6, name: "Julie Andrews", age: 88, profession: "Actriz" },
-  { id: 7, name: "Al Pacino", age: 83, profession: "Actor" },
-  { id: 8, name: "Robert De Niro", age: 80, profession: "Actor" },
-  { id: 9, name: "Jack Nicholson", age: 86, profession: "Actor" },
-  { id: 10, name: "Helen Mirren", age: 78, profession: "Actriz" },
-];
+type WikiSuggestion = {
+  id: string;
+  name: string;
+  snippet: string;
+  wikidataId: string;
+  isAlive: boolean;
+  age: number | null;
+};
 
 export default function EditListPage({
   params,
@@ -62,8 +68,10 @@ export default function EditListPage({
   const [hasChanges, setHasChanges] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredSuggestions, setFilteredSuggestions] =
-    useState(mockSuggestions);
+  const debouncedSearch = useDebounce(searchTerm, 400);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<
+    WikiSuggestion[]
+  >([]);
 
   useEffect(() => {
     const initPage = async () => {
@@ -116,13 +124,103 @@ export default function EditListPage({
   }, [groupData]);
 
   useEffect(() => {
-    const filtered = mockSuggestions.filter(
-      (person) =>
-        person.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        person.profession.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredSuggestions(filtered);
-  }, [searchTerm]);
+    const fetchPeople = async () => {
+      if (!debouncedSearch) {
+        setFilteredSuggestions([]);
+        return;
+      }
+
+      try {
+        // Step 1: Search Wikidata
+        const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(
+          debouncedSearch
+        )}&language=en&format=json&origin=*&type=item`;
+
+        const res = await fetch(searchUrl);
+        const data = await res.json();
+
+        // Step 2: For each result, fetch details to confirm it's a human
+        const humanResults = await Promise.all(
+          data.search.map(
+            async (item: {
+              id: string;
+              label: string;
+              description: string;
+            }) => {
+              try {
+                const entityUrl = `https://www.wikidata.org/wiki/Special:EntityData/${item.id}.json`;
+                const entityRes = await fetch(entityUrl);
+                const entityData = await entityRes.json();
+
+                const entity = entityData.entities[item.id];
+                const claims = entity?.claims ?? {};
+
+                // Check "instance of" human
+                const isHuman = (claims.P31 || []).some(
+                  (c: { mainsnak: { datavalue: { value: { id: string } } } }) =>
+                    c.mainsnak.datavalue?.value?.id === "Q5"
+                );
+                if (!isHuman) return null;
+
+                // Extract birth & death dates
+                const birthClaim =
+                  claims.P569?.[0]?.mainsnak?.datavalue?.value?.time;
+                const deathClaim =
+                  claims.P570?.[0]?.mainsnak?.datavalue?.value?.time;
+
+                const birthDate = birthClaim
+                  ? new Date(birthClaim.replace("+", ""))
+                  : null;
+                const deathDate = deathClaim
+                  ? new Date(deathClaim.replace("+", ""))
+                  : null;
+
+                let age: number | null = null;
+                let isAlive = true;
+
+                if (birthDate) {
+                  const endDate = deathDate || new Date();
+                  age =
+                    endDate.getFullYear() -
+                    birthDate.getFullYear() -
+                    (endDate <
+                    new Date(
+                      endDate.getFullYear(),
+                      birthDate.getMonth(),
+                      birthDate.getDate()
+                    )
+                      ? 1
+                      : 0);
+                }
+
+                if (deathDate) {
+                  isAlive = false;
+                }
+
+                return {
+                  id: item.id,
+                  name: item.label,
+                  snippet: item.description || "Person",
+                  wikidataId: item.id,
+                  isAlive,
+                  age,
+                };
+              } catch (err) {
+                console.warn("Failed to load entity", item.id, err);
+                return null;
+              }
+            }
+          )
+        );
+
+        setFilteredSuggestions(humanResults.filter(Boolean));
+      } catch (err) {
+        console.error("Wikidata search error", err);
+      }
+    };
+
+    fetchPeople();
+  }, [debouncedSearch]);
 
   const addBetToList = (newBet: BetDoc) => {
     setCurrentList((prev) => {
@@ -354,8 +452,10 @@ export default function EditListPage({
                         (bet) => bet.name === person.name
                       );
                       const canAdd =
-                        Object.keys(currentList.bets).length <
-                          groupData.private!.settings.maxBets && !isInList;
+                        person.isAlive &&
+                        currentList.bets.length <
+                          groupData.private!.settings.maxBets &&
+                        !isInList;
 
                       return (
                         <div
@@ -381,12 +481,27 @@ export default function EditListPage({
                               {person.name}
                             </p>
                             <p className="text-sm text-muted-foreground truncate">
-                              {person.profession} • {person.age} años
+                              {person.snippet} •{" "}
+                              {person.age !== null
+                                ? `${person.age} años`
+                                : "Edad desconocida"}{" "}
+                              • {person.isAlive ? "Vivo/a" : "Fallecido/a"}
                             </p>
                           </div>
                           <div className="flex-shrink-0 ml-3">
                             {isInList ? (
                               <CheckCircle className="w-5 h-5 text-green-500" />
+                            ) : !person.isAlive ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Ban className="w-5 h-5 text-red-500 cursor-not-allowed" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Esta persona no es elegible</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             ) : canAdd ? (
                               <Plus className="w-5 h-5 text-muted-foreground" />
                             ) : (
