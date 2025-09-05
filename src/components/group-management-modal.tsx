@@ -80,6 +80,7 @@ export default function GroupManagementModal({
   const handleConfirmKickMember = (memberId: string) => {
     leaveGroup(memberId, group.id);
     setMemberToKick(null);
+    reloadGroupData();
   };
 
   const handleConfirmDeleteGroup = () => {
