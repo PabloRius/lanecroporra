@@ -37,3 +37,16 @@ export type GroupDoc = {
   private?: PrivateGroupDoc;
   members?: MembersMap;
 };
+
+export interface UpdateGroupDoc {
+  public?: {
+    name?: string;
+    description?: string;
+    deadline?: Date;
+  };
+  private?: {
+    settings?: {
+      maxBets?: number;
+    };
+  };
+}
