@@ -345,19 +345,30 @@ export default function GroupPage({
                       {group.members![user.uid].list.bets.map(
                         (person, index) => (
                           <div
-                            key={index}
+                            key={person.wikidataId}
                             className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20"
                           >
+                            {/* Position number */}
                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
                               {index + 1}
                             </div>
-                            <div className="min-w-0 flex-1 flex items-center justify-between">
-                              <p className="font-medium text-sm lg:text-base truncate">
+
+                            {/* Info */}
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm lg:text-base truncate flex items-center gap-2">
                                 {person.name}
+                                {person.status === "deceased" && (
+                                  <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                )}
                               </p>
-                              {person.status === "deceased" && (
-                                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                              )}
+                              <p className="text-xs text-muted-foreground truncate">
+                                <span className="capitalize">
+                                  {person.snippet} •{" "}
+                                </span>
+                                {person.age !== null
+                                  ? `${person.age} años`
+                                  : "Edad desconocida"}
+                              </p>
                             </div>
                           </div>
                         )
@@ -503,7 +514,7 @@ export default function GroupPage({
               <div className="space-y-3">
                 {selectedMemberList?.list.map((person, index) => (
                   <div
-                    key={index}
+                    key={person.wikidataId || index}
                     className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20"
                   >
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
@@ -513,9 +524,16 @@ export default function GroupPage({
                       <p className="font-medium text-sm truncate">
                         {person.name}
                       </p>
-                      {/* <p className="text-xs text-muted-foreground">
-                        {person.profession} • {person.age} años
-                      </p> */}
+                      <p className="text-xs text-muted-foreground truncate">
+                        <span className="capitalize">{person.snippet} • </span>
+                        {person.age !== null
+                          ? `${person.age} años`
+                          : "Edad desconocida"}{" "}
+                        •{" "}
+                        {person.status === "deceased"
+                          ? "Fallecido/a"
+                          : "Vivo/a"}
+                      </p>
                     </div>
                   </div>
                 ))}

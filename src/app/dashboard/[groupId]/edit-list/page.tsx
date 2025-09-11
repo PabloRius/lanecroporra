@@ -134,7 +134,7 @@ export default function EditListPage({
         // Step 1: Search Wikidata
         const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(
           debouncedSearch
-        )}&language=en&format=json&origin=*&type=item`;
+        )}&language=es&format=json&origin=*&type=item`;
 
         const res = await fetch(searchUrl);
         const data = await res.json();
@@ -153,6 +153,16 @@ export default function EditListPage({
                 const entityData = await entityRes.json();
 
                 const entity = entityData.entities[item.id];
+
+                const label =
+                  entity.labels?.es?.value ||
+                  entity.labels?.en?.value ||
+                  item.label;
+                const description =
+                  entity.descriptions?.es?.value ||
+                  entity.descriptions?.en?.value ||
+                  item.description ||
+                  "Persona";
                 const claims = entity?.claims ?? {};
 
                 // Check "instance of" human
@@ -199,8 +209,8 @@ export default function EditListPage({
 
                 return {
                   id: item.id,
-                  name: item.label,
-                  snippet: item.description || "Person",
+                  name: label,
+                  snippet: description || "Person",
                   wikidataId: item.id,
                   isAlive,
                   age,
@@ -226,7 +236,8 @@ export default function EditListPage({
     setCurrentList((prev) => {
       if (Object.keys(prev.bets).length >= groupData!.private!.settings.maxBets)
         return prev;
-      if (prev.bets.some((bet) => bet.name === newBet.name)) return prev;
+      if (prev.bets.some((bet) => bet.wikidataId === newBet.wikidataId))
+        return prev;
 
       return { ...prev, bets: [...prev.bets, newBet] };
     });
@@ -449,8 +460,9 @@ export default function EditListPage({
                   <div className="overflow-y-auto space-y-2">
                     {filteredSuggestions.map((person) => {
                       const isInList = currentList.bets.some(
-                        (bet) => bet.name === person.name
+                        (bet) => bet.wikidataId === person.wikidataId
                       );
+
                       const canAdd =
                         person.isAlive &&
                         currentList.bets.length <
@@ -473,6 +485,9 @@ export default function EditListPage({
                               name: person.name,
                               type: "default",
                               status: "alive",
+                              wikidataId: person.wikidataId,
+                              snippet: person.snippet,
+                              age: person.age,
                             })
                           }
                         >
@@ -481,7 +496,9 @@ export default function EditListPage({
                               {person.name}
                             </p>
                             <p className="text-sm text-muted-foreground truncate">
-                              {person.snippet} •{" "}
+                              <span className="capitalize">
+                                {person.snippet} •{" "}
+                              </span>
                               {person.age !== null
                                 ? `${person.age} años`
                                 : "Edad desconocida"}{" "}

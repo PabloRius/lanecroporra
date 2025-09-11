@@ -143,27 +143,30 @@ export async function updateList(
     ? (memberSnap.data()?.list as ListDoc)
     : { bets: [] };
 
-  const oldNames = new Set(oldList.bets.map((bet) => bet.name) || []);
-  const newNames = new Set(newList.bets.map((bet) => bet.name) || []);
+  const oldIds = new Set(oldList.bets.map((bet) => bet.wikidataId) || []);
+  const newIds = new Set(newList.bets.map((bet) => bet.wikidataId) || []);
 
   // Detect additions
-  const added = [...newNames].filter((name) => !oldNames.has(name));
+  const added = [...newIds].filter((id) => !oldIds.has(id));
   // Detect removals
-  const removed = [...oldNames].filter((name) => !newNames.has(name));
+  const removed = [...oldIds].filter((id) => !newIds.has(id));
 
   // Process additions
-  for (const name of added) {
-    console.log("adding: ", name);
-    await updateRecord(name, userId, groupId);
+  for (const id of added) {
+    const bet = newList.bets.find((b) => b.wikidataId === id);
+    if (!bet) continue;
+
+    console.log("adding:", bet.name, id);
+    await updateRecord(bet.wikidataId, userId, groupId);
   }
 
   // Process removals
-  for (const name of removed) {
-    console.log("removing: ", name);
+  for (const id of removed) {
+    console.log("removing:", id);
     const listRef = doc(
       db,
       "review-record",
-      name,
+      id,
       "lists",
       `${userId}_${groupId}`
     );

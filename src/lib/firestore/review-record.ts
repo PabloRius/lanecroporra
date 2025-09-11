@@ -2,16 +2,16 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase/clientApp";
 
 export async function updateRecord(
-  name: string,
+  wikidataId: string,
   userId: string,
   groupId: string
 ) {
-  const recordRef = doc(db, "review-record", name);
+  const recordRef = doc(db, "review-record", wikidataId);
 
   const listRef = doc(
     db,
     "review-record",
-    name,
+    wikidataId,
     "lists",
     `${userId}_${groupId}`
   );
