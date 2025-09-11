@@ -103,15 +103,20 @@ service cloud.firestore {
 
     // Review Record
     match /review-record/{name} {
-      match /meta/{docId} {
-        allow read: if true;
-        allow write: if request.auth != null && request.auth.token.admin == true
-      }
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && !exists(/databases/$(database)/documents/review-record/$(name))
+          && request.resource.data.keys().hasOnly(["createdAt", "status"])
+          && request.resource.data.status == "alive";
+        allow update, delete: if false;
+      
 
       match /lists/{listId} {
-        allow create, delete: if request.auth != null
+        allow create: if request.auth != null
           && request.resource.data.userId == request.auth.uid;
-        allow read ¡: if request.auth != null
+        allow delete: if request.auth != null
+          && resource.data.userId == request.auth.uid;
+        allow read : if request.auth != null
       }
     }
   }

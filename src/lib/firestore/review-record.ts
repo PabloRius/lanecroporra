@@ -1,4 +1,4 @@
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase/clientApp";
 
 export async function updateRecord(
@@ -6,6 +6,8 @@ export async function updateRecord(
   userId: string,
   groupId: string
 ) {
+  const recordRef = doc(db, "review-record", name);
+
   const listRef = doc(
     db,
     "review-record",
@@ -13,5 +15,15 @@ export async function updateRecord(
     "lists",
     `${userId}_${groupId}`
   );
+
+  const recordSnap = await getDoc(recordRef);
+
+  if (!recordSnap.exists()) {
+    await setDoc(recordRef, {
+      createdAt: new Date(),
+      status: "alive",
+    });
+  }
+
   await setDoc(listRef, { userId, groupId });
 }
