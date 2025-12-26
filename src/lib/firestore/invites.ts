@@ -31,9 +31,11 @@ export async function generateInvite(groupId: string, userId: string) {
   await setDoc(inviteRef, inviteData);
 
   const prevInviteLink = groupData.inviteLink;
-  const prevInviteRef = doc(db, "invites", prevInviteLink);
+  if (prevInviteLink) {
+    const prevInviteRef = doc(db, "invites", prevInviteLink);
 
-  await deleteDoc(prevInviteRef);
+    await deleteDoc(prevInviteRef);
+  }
 
   await updateDoc(groupRef, {
     inviteLink: inviteId,

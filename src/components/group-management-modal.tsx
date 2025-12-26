@@ -140,6 +140,8 @@ export default function GroupManagementModal({
     { id: "danger", label: "Zona Peligrosa", icon: Trash2 },
   ];
 
+  console.log(group.private!.inviteLink);
+
   return (
     <>
       {/* Main Modal */}
