@@ -105,7 +105,7 @@ export default function EditListPage({
     const updateTimeLeft = () => {
       if (!groupData) return;
       const now = new Date();
-      const diff = groupData.public.deadline.getTime() - now.getTime();
+      const diff = groupData.deadline.getTime() - now.getTime();
 
       if (diff <= 0) {
         setTimeLeft({ days: 0, hours: 0 });
@@ -234,7 +234,7 @@ export default function EditListPage({
 
   const addBetToList = (newBet: BetDoc) => {
     setCurrentList((prev) => {
-      if (Object.keys(prev.bets).length >= groupData!.private!.settings.maxBets)
+      if (Object.keys(prev.bets).length >= groupData!.settings.maxBets)
         return prev;
       if (prev.bets.some((bet) => bet.wikidataId === newBet.wikidataId))
         return prev;
@@ -317,7 +317,7 @@ export default function EditListPage({
               </Button>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-xl font-bold truncate">
-                  {groupData.public.name}
+                  {groupData.name}
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   Editando mi lista
@@ -359,18 +359,18 @@ export default function EditListPage({
                   <Badge
                     variant={
                       Object.keys(currentList.bets).length ===
-                      groupData.private!.settings.maxBets
+                      groupData!.settings.maxBets
                         ? "default"
                         : "secondary"
                     }
                   >
                     {Object.keys(currentList.bets).length}/
-                    {groupData.private!.settings.maxBets}
+                    {groupData!.settings.maxBets}
                   </Badge>
                 </CardTitle>
                 <CardDescription>
-                  Puedes añadir hasta {groupData.private!.settings.maxBets}{" "}
-                  personas a tu lista
+                  Puedes añadir hasta {groupData!.settings.maxBets} personas a
+                  tu lista
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -465,8 +465,7 @@ export default function EditListPage({
 
                       const canAdd =
                         person.isAlive &&
-                        currentList.bets.length <
-                          groupData.private!.settings.maxBets &&
+                        currentList.bets.length < groupData!.settings.maxBets &&
                         !isInList;
 
                       return (

@@ -81,7 +81,7 @@ export default function GroupPage({
   useEffect(() => {
     if (group) {
       const updateCountdown = () => {
-        setTimeLeft(getTimeLeft(group.public.deadline));
+        setTimeLeft(getTimeLeft(group.deadline));
       };
 
       updateCountdown();
@@ -127,7 +127,7 @@ export default function GroupPage({
     redirect("/login");
   }
 
-  if (!group || !group.private || !group.members) {
+  if (!group || !group.members) {
     redirect("/dashboard");
   }
 
@@ -144,9 +144,7 @@ export default function GroupPage({
             <Button variant="ghost" size="sm" onClick={() => setOpen()}>
               <Menu className="w-4 h-4" />
             </Button>
-            <h2 className="font-semibold truncate flex-1">
-              {group.public.name}
-            </h2>
+            <h2 className="font-semibold truncate flex-1">{group.name}</h2>
             {isAdmin && (
               <Button
                 variant="ghost"
@@ -224,13 +222,9 @@ export default function GroupPage({
             <div className="flex items-start justify-between mb-4">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-2xl font-bold truncate">
-                    {group.public.name}
-                  </h2>
+                  <h2 className="text-2xl font-bold truncate">{group.name}</h2>
                 </div>
-                <p className="text-muted-foreground">
-                  {group.public.description}
-                </p>
+                <p className="text-muted-foreground">{group.description}</p>
               </div>
               {isAdmin && (
                 <Button
@@ -324,7 +318,7 @@ export default function GroupPage({
                         href={group.id + "/edit-list"}
                         className="flex items-center gap-1"
                       >
-                        {group.public.status === "draft"
+                        {group.status === "draft"
                           ? "Editar Lista"
                           : "Ver Lista"}
                         {/* Warning if any deceased before deadline */}
@@ -455,7 +449,7 @@ export default function GroupPage({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 text-sm max-h-80 overflow-y-auto">
-                    {group.private?.activityLog
+                    {group?.activityLog
                       .slice()
                       .reverse()
                       .map((log, index) => (

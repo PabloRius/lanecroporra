@@ -163,7 +163,7 @@ export default function InvitePage({
     !!groupData?.members &&
     !!groupData.members[currentUser.uid];
 
-  const timeLeft = calculateTimeLeft(groupData.public.deadline);
+  const timeLeft = calculateTimeLeft(groupData.deadline);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -182,16 +182,14 @@ export default function InvitePage({
           <div className="text-center space-y-2">
             <div className="flex items-center justify-center gap-2">
               <h3 className="text-xl lg:text-2xl font-bold">
-                {groupData.public.name}
+                {groupData.name}
               </h3>
             </div>
-            <p className="text-muted-foreground">
-              {groupData.public.description}
-            </p>
+            <p className="text-muted-foreground">{groupData.description}</p>
             <div className="text-sm text-muted-foreground">
               <p>Creado por </p>
               <span className="font-medium">
-                <ResolveUserId userId={groupData.public.creatorId} />
+                <ResolveUserId userId={groupData.creatorId} />
               </span>
             </div>
           </div>

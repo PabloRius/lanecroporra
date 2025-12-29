@@ -2,22 +2,12 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DialogFooter, DialogHeader } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { getGroupById } from "@/lib/firestore/groups";
 import { getUserById, removeGroupFromUser } from "@/lib/firestore/users";
 import { GroupDoc } from "@/models/Group";
 import { UserDoc } from "@/models/User";
 import { useAuth } from "@/providers/auth-provider";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  DialogTrigger,
-} from "@radix-ui/react-dialog";
-import { Label } from "@radix-ui/react-label";
-import { Loader2, Plus, UserPlus, Users, X } from "lucide-react";
+import { Loader2, Plus, Users, X } from "lucide-react";
 import { redirect, useParams, useRouter } from "next/navigation";
 import {
   createContext,
@@ -72,7 +62,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
       fetchedUserDoc.groups.map(async (groupId: string) => {
         const fetchedGroup = await getGroupById(groupId, currentUser.uid);
         console.log(fetchedGroup);
-        if (!fetchedGroup || !fetchedGroup?.members || !fetchedGroup.private) {
+        if (!fetchedGroup || !fetchedGroup?.members) {
           await removeGroupFromUser(currentUser.uid, groupId);
           return null;
         } else {
@@ -160,46 +150,14 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
                 }}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Crear
+                Crear un Grupo
               </Button>
-
-              <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 bg-transparent"
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Unirse
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Unirse a Grupo</DialogTitle>
-                    <DialogDescription>
-                      Introduce el código del grupo para unirte.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="code">Código del Grupo</Label>
-                      <Input id="code" placeholder="Ej: AMG2024" />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={() => setShowJoinDialog(false)}>
-                      Unirse
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
             </div>
           </div>
 
           <div className="overflow-y-auto">
             {groups.map((group) => {
-              if (!group.private || !group.members) return null;
+              if (!group || !group.members) return null;
 
               const isActive = currentGroupId === group.id;
 
@@ -213,11 +171,11 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-sm truncate flex-1">
-                      {group.public.name}
+                      {group.name}
                     </h3>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                    {group.public.description}
+                    {group.description}
                   </p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
@@ -226,17 +184,17 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
                     </div>
                     <Badge
                       variant={
-                        group.public.status === "draft"
+                        group.status === "draft"
                           ? "secondary"
-                          : group.public.status === "activo"
+                          : group.status === "activo"
                           ? "default"
                           : "destructive"
                       }
                       className="text-xs"
                     >
-                      {group.public.status === "draft"
+                      {group.status === "draft"
                         ? "Draft"
-                        : group.public.status === "activo"
+                        : group.status === "activo"
                         ? "Activo"
                         : "Finalizado"}
                     </Badge>

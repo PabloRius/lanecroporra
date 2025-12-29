@@ -13,7 +13,7 @@ import { db } from "../firebase/clientApp";
 import { getGroupById } from "./groups";
 
 export async function generateInvite(groupId: string, userId: string) {
-  const groupRef = doc(db, "groups", groupId, "private", "data");
+  const groupRef = doc(db, "groups", groupId);
   const groupData = (await getDoc(groupRef)).data();
 
   if (!groupData) {

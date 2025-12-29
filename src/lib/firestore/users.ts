@@ -2,13 +2,44 @@ import { UserDoc } from "@/models/User";
 import { User } from "firebase/auth";
 import {
   arrayRemove,
+  collection,
   doc,
   getDoc,
+  getDocs,
+  orderBy,
+  query,
   setDoc,
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/clientApp";
+
+export async function getAllUsers(): Promise<UserDoc[] | null> {
+  try {
+    const usersRef = collection(db, "users");
+
+    const q = query(usersRef, orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return [];
+    }
+
+    const users = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: (data.createdAt as Timestamp).toDate() || new Date(),
+      } as unknown as UserDoc;
+    });
+
+    return users;
+  } catch (error) {
+    console.error("Error fetching users: ", error);
+    return null;
+  }
+}
 
 export async function getUserById(uid: string): Promise<UserDoc | null> {
   const userRef = doc(db, "users", uid);
@@ -40,6 +71,8 @@ export async function createUser(authUser: User) {
       displayName: authUser.displayName || authUser.email!.split("@")[0],
       createdAt: new Date(),
       groups: [],
+      role: "user",
+      status: "active",
     };
 
     await setDoc(userRef, newUser);

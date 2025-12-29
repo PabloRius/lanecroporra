@@ -76,12 +76,10 @@ export default function GroupManagementModal({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [memberToKick, setMemberToKick] = useState<string | null>(null);
 
-  const [groupName, setGroupName] = useState(group.public.name);
-  const [groupDescription, setGroupDescription] = useState(
-    group.public.description
-  );
-  const [maxBets, setMaxBets] = useState(group.private!.settings.maxBets);
-  const [deadline, setDeadline] = useState(group.public.deadline);
+  const [groupName, setGroupName] = useState(group.name);
+  const [groupDescription, setGroupDescription] = useState(group.description);
+  const [maxBets, setMaxBets] = useState(group!.settings.maxBets);
+  const [deadline, setDeadline] = useState(group.deadline);
   const [saving, setSaving] = useState(false);
 
   if (!currentUser) {
@@ -111,15 +109,11 @@ export default function GroupManagementModal({
     try {
       setSaving(true);
       const updatedGroup: UpdateGroupDoc = {
-        public: {
-          name: groupName,
-          description: groupDescription,
-          deadline: deadline,
-        },
-        private: {
-          settings: {
-            maxBets: maxBets,
-          },
+        name: groupName,
+        description: groupDescription,
+        deadline: deadline,
+        settings: {
+          maxBets: maxBets,
         },
       };
       await updateGroup(group.id, updatedGroup);
@@ -140,7 +134,7 @@ export default function GroupManagementModal({
     { id: "danger", label: "Zona Peligrosa", icon: Trash2 },
   ];
 
-  console.log(group.private!.inviteLink);
+  console.log(group!.inviteLink);
 
   return (
     <>
@@ -155,7 +149,7 @@ export default function GroupManagementModal({
                   Gestión de Grupo
                 </DialogTitle>
                 <DialogDescription className="text-sm">
-                  {group.public.name}
+                  {group.name}
                 </DialogDescription>
               </DialogHeader>
 
@@ -204,8 +198,8 @@ export default function GroupManagementModal({
                       Generar Nuevo Enlace
                     </Button>
                     <div className="space-y-2 max-w-min overflow-hidden">
-                      {group.private?.inviteLink && (
-                        <InviteCard tokenId={group.private!.inviteLink} />
+                      {group?.inviteLink && (
+                        <InviteCard tokenId={group!.inviteLink} />
                       )}
                     </div>
                   </div>
@@ -286,7 +280,7 @@ export default function GroupManagementModal({
                       {Object.keys(group.members!).map((memberId) => {
                         const member = group.members![memberId];
                         const isAdmin = member.role === "admin";
-                        const isCreator = memberId === group.public.creatorId;
+                        const isCreator = memberId === group.creatorId;
                         const isCurrentUserAdmin =
                           group.members![currentUser!.uid]?.role === "admin";
 

@@ -3,8 +3,6 @@ import {
   GroupDoc,
   MemberDoc,
   MembersMap,
-  PrivateGroupDoc,
-  PublicGroupDoc,
   UpdateGroupDoc,
 } from "@/models/Group";
 import { InviteDoc } from "@/models/Invite";
@@ -26,22 +24,47 @@ import { db } from "../firebase/clientApp";
 import { updateRecord } from "./review-record";
 import { resolveUserId } from "./users";
 
+export async function getAllGroups(): Promise<GroupDoc[] | null> {
+  try {
+    const groupsRef = collection(db, "groups");
+
+    const querySnapshot = await getDocs(groupsRef);
+
+    if (querySnapshot.empty) {
+      return [];
+    }
+
+    const groups = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        // createdAt: (data.createdAt as Timestamp).toDate() || new Date(),
+        deadline: (data.deadline as Timestamp).toDate() || new Date(),
+      } as unknown as GroupDoc;
+    });
+
+    return groups;
+  } catch (error) {
+    console.error("Error fetching users: ", error);
+    return null;
+  }
+}
+
 export async function getGroupById(
   groupId: string,
   userId?: string
 ): Promise<GroupDoc | null> {
-  const publicSnap = await getDoc(doc(db, "groups", groupId, "public", "data"));
-  if (!publicSnap.exists()) return null;
+  const groupSnap = await getDoc(doc(db, "groups", groupId));
+  if (!groupSnap.exists()) return null;
 
-  const publicData = publicSnap.data();
+  const groupData = groupSnap.data();
 
   const result: GroupDoc = {
     id: groupId,
-    public: {
-      ...publicData,
-      deadline: (publicData.deadline as Timestamp).toDate(),
-    } as PublicGroupDoc,
-  };
+    ...groupData,
+    deadline: (groupData.deadline as Timestamp).toDate(),
+  } as GroupDoc;
 
   if (userId) {
     try {
@@ -50,14 +73,6 @@ export async function getGroupById(
         doc(db, "groups", groupId, "members", userId)
       );
       if (memberSnap.exists()) {
-        // ✅ user is a member → fetch private + members
-        const privateSnap = await getDoc(
-          doc(db, "groups", groupId, "private", "data")
-        );
-        result.private = privateSnap.exists()
-          ? (privateSnap.data() as PrivateGroupDoc)
-          : undefined;
-
         const membersCol = collection(db, "groups", groupId, "members");
         const membersSnap = await getDocs(membersCol);
 
@@ -69,8 +84,7 @@ export async function getGroupById(
         result.members = members;
       }
     } catch (err) {
-      // Permission error (user not a member) → just ignore
-      console.warn("Not a member or no permission to read members:", err);
+      console.warn("Not a member or no permission to read:", err);
     }
   }
 
@@ -78,26 +92,25 @@ export async function getGroupById(
 }
 
 export async function createGroup(
-  groupData: Omit<PublicGroupDoc, "id" | "status"> & {
-    settings: PrivateGroupDoc["settings"];
-  }
+  groupData: Omit<GroupDoc, "id" | "status" | "activityLog" | "createdAt">
 ): Promise<{ groupId: string }> {
-  const groupRef = doc(collection(db, "groups"));
+  const batch = writeBatch(db);
 
-  const publicDoc: PublicGroupDoc = {
+  const groupRef = doc(collection(db, "groups"));
+  const groupId = groupRef.id;
+
+  const creatorUsername = await resolveUserId(groupData.creatorId);
+  const now = Timestamp.now();
+
+  const groupDoc: GroupDoc = {
     id: groupRef.id,
     creatorId: groupData.creatorId,
     name: groupData.name,
     description: groupData.description,
     status: "draft",
     deadline: groupData.deadline,
-  };
-
-  const creatorUsername = await resolveUserId(groupData.creatorId);
-  const now = Timestamp.now();
-
-  const privateDoc: PrivateGroupDoc = {
     settings: groupData.settings,
+    createdAt: new Date(),
     activityLog: [
       {
         message: `Grupo ${groupData.name} creado por ${creatorUsername}`,
@@ -113,21 +126,20 @@ export async function createGroup(
     list: { bets: [], points: 0 },
   };
 
-  await Promise.all([
-    setDoc(doc(db, "groups", groupRef.id, "public", "data"), publicDoc),
-    setDoc(doc(db, "groups", groupRef.id, "private", "data"), privateDoc),
-    setDoc(
-      doc(db, "groups", groupRef.id, "members", groupData.creatorId),
-      memberDoc
-    ),
-  ]);
+  batch.set(doc(db, "groups", groupId), groupDoc);
+  batch.set(
+    doc(db, "groups", groupId, "members", groupData.creatorId),
+    memberDoc
+  );
 
   const userRef = doc(db, "users", groupData.creatorId);
-  await updateDoc(userRef, {
-    groups: arrayUnion(groupRef.id),
+  batch.update(userRef, {
+    groups: arrayUnion(groupId),
   });
 
-  return { groupId: groupRef.id };
+  await batch.commit();
+
+  return { groupId };
 }
 
 export async function updateList(
@@ -194,7 +206,7 @@ export async function joinGroup(userId: string, tokenId: string) {
   const inviteData = inviteSnap.data() as InviteDoc;
 
   const memberRef = doc(db, "groups", inviteData.groupId, "members", userId);
-  const groupRef = doc(db, "groups", inviteData.groupId, "private", "data");
+  const groupRef = doc(db, "groups", inviteData.groupId, "private");
 
   setDoc(memberRef, {
     role: "member",
@@ -226,7 +238,7 @@ export async function leaveGroup(userId: string, groupId: string) {
   }
 
   const memberRef = doc(db, "groups", groupId, "members", userId);
-  const groupRef = doc(db, "groups", groupId, "private", "data");
+  const groupRef = doc(db, "groups", groupId, "private");
 
   const now = Timestamp.now();
 
@@ -243,36 +255,28 @@ export async function updateGroup(
   groupId: string,
   newGroupData: UpdateGroupDoc
 ) {
-  const publicGroupRef = doc(db, "groups", groupId, "public", "data");
-  const privateGroupRef = doc(db, "groups", groupId, "private", "data");
-  await updateDoc(publicGroupRef, {
-    name: newGroupData.public?.name,
-    description: newGroupData.public?.description,
-    deadline: newGroupData.public?.deadline,
-  });
-  await updateDoc(privateGroupRef, {
+  const groupRef = doc(db, "groups", groupId);
+  await updateDoc(groupRef, {
+    name: newGroupData.name,
+    description: newGroupData.description,
+    deadline: newGroupData.deadline,
     settings: {
-      maxBets: newGroupData.private?.settings?.maxBets,
+      maxBets: newGroupData.settings?.maxBets,
     },
   });
 }
 
 export async function deleteGroup(groupId: string) {
-  const publicGroupRef = doc(db, "groups", groupId, "public", "data");
-  const privateGroupRef = doc(db, "groups", groupId, "private", "data");
+  const groupRef = doc(db, "groups", groupId);
+  const groupSnap = await getDoc(groupRef);
+  const groupData = groupSnap.data() as GroupDoc;
 
-  const privateSnap = await getDoc(privateGroupRef);
-  if (privateSnap.exists()) {
-    const privateData = privateSnap.data() as { inviteLink?: string };
-
-    if (privateData.inviteLink) {
-      const inviteRef = doc(db, "invites", privateData.inviteLink);
-      await deleteDoc(inviteRef);
-    }
+  if (groupData.inviteLink) {
+    const inviteRef = doc(db, "invites", groupData.inviteLink);
+    await deleteDoc(inviteRef);
   }
 
-  await deleteDoc(publicGroupRef);
-  await deleteDoc(privateGroupRef);
+  await deleteDoc(groupRef);
 
   const membersColRef = collection(db, "groups", groupId, "members");
   const membersSnap = await getDocs(membersColRef);

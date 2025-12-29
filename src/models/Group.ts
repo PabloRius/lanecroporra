@@ -12,41 +12,30 @@ export interface Log {
   timestamp: Timestamp;
 }
 
-export interface PublicGroupDoc {
+export type MembersMap = Record<string, MemberDoc>;
+
+export type GroupDoc = {
   id: string;
   name: string;
   description: string;
   status: "draft" | "activo" | "finalizado";
   deadline: Date;
   creatorId: string;
-}
+  createdAt: Date;
 
-export interface PrivateGroupDoc {
   settings: {
     maxBets: number;
   };
   inviteLink?: string;
   activityLog: Log[];
-}
-
-export type MembersMap = Record<string, MemberDoc>;
-
-export type GroupDoc = {
-  id: string;
-  public: PublicGroupDoc;
-  private?: PrivateGroupDoc;
   members?: MembersMap;
 };
 
 export interface UpdateGroupDoc {
-  public?: {
-    name?: string;
-    description?: string;
-    deadline?: Date;
-  };
-  private?: {
-    settings?: {
-      maxBets?: number;
-    };
+  name?: string;
+  description?: string;
+  deadline?: Date;
+  settings?: {
+    maxBets?: number;
   };
 }
