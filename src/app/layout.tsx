@@ -107,7 +107,7 @@ html {
       <body
         className={
           playfair.variable +
-          " flex flex-col gap-4 min-h-screen bg-white dark:bg-black transition-colors duration-300"
+          " flex flex-col min-h-screen bg-white dark:bg-black transition-colors duration-300"
         }
       >
         <AuthProvider>

@@ -28,8 +28,10 @@ import { useState } from "react";
 type SortKey = "name" | "creatorId" | "members" | "status" | "deadline";
 
 export const AdminGroupsTable = ({
+  searchTerm,
   allGroups,
 }: {
+  searchTerm: string;
   allGroups: GroupDoc[] | undefined | null;
 }) => {
   const [sortConfig, setSortConfig] = useState<{
@@ -49,30 +51,32 @@ export const AdminGroupsTable = ({
     }));
   };
 
-  const sortedGroups = [...allGroups].sort((a, b) => {
-    const { key, direction } = sortConfig;
-    let comparison = 0;
+  const sortedGroups = [...(allGroups || [])]
+    .filter((u) => u.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => {
+      const { key, direction } = sortConfig;
+      let comparison = 0;
 
-    switch (key) {
-      case "members":
-        const aMem = Object.keys(a.members || {}).length;
-        const bMem = Object.keys(b.members || {}).length;
-        comparison = aMem - bMem;
-        break;
-      case "deadline":
-        comparison = a.deadline.getTime() - b.deadline.getTime();
-        break;
-      default:
-        const aVal = String(a[key as keyof typeof a] || "");
-        const bVal = String(b[key as keyof typeof b] || "");
-        comparison = aVal.localeCompare(bVal, "es", {
-          sensitivity: "base",
-          numeric: true,
-        });
-    }
+      switch (key) {
+        case "members":
+          const aMem = Object.keys(a.members || {}).length;
+          const bMem = Object.keys(b.members || {}).length;
+          comparison = aMem - bMem;
+          break;
+        case "deadline":
+          comparison = a.deadline.getTime() - b.deadline.getTime();
+          break;
+        default:
+          const aVal = String(a[key as keyof typeof a] || "");
+          const bVal = String(b[key as keyof typeof b] || "");
+          comparison = aVal.localeCompare(bVal, "es", {
+            sensitivity: "base",
+            numeric: true,
+          });
+      }
 
-    return direction === "asc" ? comparison : -comparison;
-  });
+      return direction === "asc" ? comparison : -comparison;
+    });
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("es-ES", {

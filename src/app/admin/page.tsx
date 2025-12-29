@@ -21,20 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { getAllGroups } from "@/lib/firestore/groups";
 import { getAllUsers, getUserById } from "@/lib/firestore/users";
 import { GroupDoc } from "@/models/Group";
@@ -43,15 +30,12 @@ import { useAuth } from "@/providers/auth-provider";
 import {
   AlertTriangle,
   CheckCircle,
-  Eye,
   Layers,
-  List,
   Lock,
   Play,
   RefreshCw,
   Search,
   Shield,
-  Trash2,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -290,11 +274,26 @@ function AdminContent() {
             </CardContent>
           </Card>
 
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold capitalize">
+              {selectedTab === "groups"
+                ? "Listado de Grupos"
+                : "Listado de Usuarios"}
+            </h2>
+            <Badge variant="secondary">
+              {selectedTab === "groups"
+                ? `${allGroups?.length || 0} registrados`
+                : `${allUsers?.length || 0} registrados`}
+            </Badge>
+          </div>
+
           {/* Search Bar */}
-          <div className="relative">
+          <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar usuarios, grupos o listas..."
+              placeholder={`Buscar en ${
+                selectedTab === "groups" ? "grupos" : "usuarios"
+              }...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -307,112 +306,35 @@ function AdminContent() {
             onValueChange={setSelectedTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="groups" className="flex items-center gap-2">
                 <Layers className="h-4 w-4" />
-                <span className="hidden sm:inline">Grupos</span>
+                <span>Grupos</span>
+                {allGroups && (
+                  <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                    {allGroups.length}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Usuarios</span>
-              </TabsTrigger>
-              <TabsTrigger value="lists" className="flex items-center gap-2">
-                <List className="h-4 w-4" />
-                <span className="hidden sm:inline">Listas</span>
+                <span>Usuarios</span>
+                {allUsers && (
+                  <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                    {allUsers.length}
+                  </span>
+                )}
               </TabsTrigger>
             </TabsList>
 
             {/* Groups Tab */}
             <TabsContent value="groups" className="mt-6">
-              <AdminGroupsTable allGroups={allGroups} />
+              <AdminGroupsTable searchTerm={searchTerm} allGroups={allGroups} />
             </TabsContent>
 
             {/* Users Tab */}
             <TabsContent value="users" className="mt-6">
               <AdminUsersTable searchTerm={searchTerm} allUsers={allUsers} />
-            </TabsContent>
-
-            {/* Lists Tab */}
-            <TabsContent value="lists" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Gestión de Listas</CardTitle>
-                  <CardDescription>
-                    Revisa y administra todas las listas enviadas por los
-                    usuarios
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="min-w-[150px]">
-                            Usuario
-                          </TableHead>
-                          <TableHead className="hidden md:table-cell">
-                            Grupo
-                          </TableHead>
-                          <TableHead>Famosos</TableHead>
-                          <TableHead className="hidden lg:table-cell">
-                            Fecha Envío
-                          </TableHead>
-                          <TableHead>Estado</TableHead>
-                          <TableHead className="text-right">Acciones</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {mockLists.map((list) => (
-                          <TableRow key={list.id}>
-                            <TableCell className="font-medium">
-                              {list.user}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {list.group}
-                            </TableCell>
-                            <TableCell>{list.celebrities}</TableCell>
-                            <TableCell className="hidden lg:table-cell">
-                              {list.submitted}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  list.status === "active"
-                                    ? "default"
-                                    : "secondary"
-                                }
-                              >
-                                {list.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Tooltip>
-                                  <TooltipContent>
-                                    <span>Inspeccionar</span>
-                                  </TooltipContent>
-                                  <TooltipTrigger>
-                                    <Button variant="ghost" size="sm">
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                </Tooltip>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
           </Tabs>
         </div>
@@ -463,7 +385,8 @@ function AdminContent() {
             </Button>
             <Button
               onClick={handleRunDeceaseCheck}
-              disabled={isProcessing}
+              //   disabled={isProcessing}
+              disabled
               className="w-full sm:w-auto"
             >
               {isProcessing ? (
@@ -524,7 +447,8 @@ function AdminContent() {
             <Button
               variant="destructive"
               onClick={handleCloseAllLists}
-              disabled={isProcessing}
+              //   disabled={isProcessing}
+              disabled
               className="w-full sm:w-auto"
             >
               {isProcessing ? (
