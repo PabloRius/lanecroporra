@@ -31,7 +31,7 @@ export function FloatingMenu() {
     }
   }, [currentUser, loading]);
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || "creator";
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
