@@ -41,33 +41,6 @@ import {
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 
-const mockLists = [
-  {
-    id: 1,
-    user: "Juan Pérez",
-    group: "Amigos del Barrio 2024",
-    celebrities: 12,
-    submitted: "2024-01-20",
-    status: "active",
-  },
-  {
-    id: 2,
-    user: "María García",
-    group: "Oficina Central",
-    celebrities: 15,
-    submitted: "2024-01-22",
-    status: "active",
-  },
-  {
-    id: 3,
-    user: "Ana Martínez",
-    group: "Universidad Nostálgicos",
-    celebrities: 10,
-    submitted: "2024-01-25",
-    status: "closed",
-  },
-];
-
 function AdminContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDeceaseDialog, setShowDeceaseDialog] = useState(false);
@@ -93,7 +66,7 @@ function AdminContent() {
     }
   }, [currentUser, loading]);
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || "creator";
 
   // All data
   const [allUsers, setAllUsers] = useState<UserDoc[] | undefined | null>(
@@ -195,150 +168,132 @@ function AdminContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Shield className="h-6 w-6 text-red-500" />
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold">
-                  Panel de Administración
+    <div className="min-h-screen bg-slate-50/50 dark:bg-background">
+      {/* Sticky Header Responsive */}
+      <header className="border-b bg-card/80 backdrop-blur-md sticky top-0 z-30">
+        <div className="container mx-auto px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+              <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-red-500 shrink-0" />
+              <div className="truncate">
+                <h1 className="text-lg sm:text-xl font-bold truncate">
+                  Admin Panel
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  Control total del sistema
+                <p className="hidden xs:block text-[10px] sm:text-xs text-muted-foreground">
+                  Necroporra 2025
                 </p>
               </div>
             </div>
             <Link href="/dashboard">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="w-full sm:w-auto bg-transparent"
+                className="text-xs sm:text-sm h-8 sm:h-10"
               >
-                Volver al Dashboard
+                Salir
               </Button>
             </Link>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-4 py-6 lg:py-8">
-        <div className="grid gap-6">
-          {/* Global Actions Section */}
-          <Card className="border-red-200 dark:border-red-900">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <AlertTriangle className="h-5 w-5 text-red-500" />
-                Acciones Globales
+      <main className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
+        {/* Actions Grid - 1 col on mobile, 2 on tablet+ */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="border-red-100 dark:border-red-900/50 hover:shadow-md transition-shadow gap-0">
+            <CardHeader className="p-4 sm:p-6 pb-2">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-red-500" />
+                Ejecutar algoritmo de detección
               </CardTitle>
-              <CardDescription>
-                Funciones administrativas que afectan a todo el sistema
-              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Button
-                  variant="outline"
-                  className="h-auto flex flex-col items-start p-4 hover:bg-red-50 dark:hover:bg-red-950/20 bg-transparent"
-                  onClick={() => setShowDeceaseDialog(true)}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <RefreshCw className="h-5 w-5 text-red-500" />
-                    <span className="font-semibold">
-                      Ejecutar Algoritmo de Detección
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-left">
-                    Revisa todas las listas y detecta fallecimientos de famosos
-                  </p>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="h-auto flex flex-col items-start p-4 hover:bg-amber-50 dark:hover:bg-amber-950/20 bg-transparent"
-                  onClick={() => setShowCloseAllDialog(true)}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lock className="h-5 w-5 text-amber-500" />
-                    <span className="font-semibold">
-                      Cerrar Todas las Listas
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-left">
-                    Finaliza el período de edición para todas las listas activas
-                  </p>
-                </Button>
-              </div>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <p className="text-xs text-muted-foreground mb-4">
+                Revisa todas las listas y detecta fallecimientos de los famosos
+              </p>
+              <Button
+                onClick={() => setShowDeceaseDialog(true)}
+                variant="outline"
+                className="w-full text-xs sm:text-sm hover:bg-red-50 dark:hover:bg-red-950/20"
+              >
+                Ejecutar Algoritmo
+              </Button>
             </CardContent>
           </Card>
 
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold capitalize">
-              {selectedTab === "groups"
-                ? "Listado de Grupos"
-                : "Listado de Usuarios"}
-            </h2>
-            <Badge variant="secondary">
-              {selectedTab === "groups"
-                ? `${allGroups?.length || 0} registrados`
-                : `${allUsers?.length || 0} registrados`}
+          <Card className="border-amber-100 dark:border-amber-900/50 hover:shadow-md transition-shadow gap-0">
+            <CardHeader className="p-4 sm:p-6 pb-2">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Lock className="h-4 w-4 text-amber-500" />
+                Cerrar todas las listas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <p className="text-xs text-muted-foreground mb-4">
+                Finaliza el período de edición para todas las listas en
+                &apos;draft&apos;.
+              </p>
+              <Button
+                onClick={() => setShowCloseAllDialog(true)}
+                variant="outline"
+                className="w-full text-xs sm:text-sm hover:bg-amber-50 dark:hover:bg-amber-950/20"
+              >
+                Cerrar Todas
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Data Management Section */}
+        <section className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-lg font-bold tracking-tight px-1 capitalize">
+                {selectedTab === "groups" ? "Grupos" : "Usuarios"}
+              </h2>
+              <div className="relative w-full sm:w-72 lg:w-96">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={`Buscar ${selectedTab}...`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-9 sm:h-10 text-sm bg-card"
+                />
+              </div>
+            </div>
+            <Badge
+              variant="outline"
+              className="w-fit self-start sm:self-auto bg-card px-3 py-1"
+            >
+              {selectedTab === "groups" ? allGroups?.length : allUsers?.length}{" "}
+              Total
             </Badge>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={`Buscar en ${
-                selectedTab === "groups" ? "grupos" : "usuarios"
-              }...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Tabs Section */}
           <Tabs
             value={selectedTab}
             onValueChange={setSelectedTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="groups" className="flex items-center gap-2">
-                <Layers className="h-4 w-4" />
-                <span>Grupos</span>
-                {allGroups && (
-                  <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                    {allGroups.length}
-                  </span>
-                )}
+            <TabsList className="grid w-full grid-cols-2 h-11 p-1 bg-muted/50">
+              <TabsTrigger value="groups" className="text-xs sm:text-sm gap-2">
+                <Layers className="h-3.5 w-3.5" /> Grupos
               </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span>Usuarios</span>
-                {allUsers && (
-                  <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                    {allUsers.length}
-                  </span>
-                )}
+              <TabsTrigger value="users" className="text-xs sm:text-sm gap-2">
+                <Users className="h-3.5 w-3.5" /> Usuarios
               </TabsTrigger>
             </TabsList>
 
-            {/* Groups Tab */}
-            <TabsContent value="groups" className="mt-6">
+            <TabsContent value="groups" className="mt-4 outline-none">
               <AdminGroupsTable searchTerm={searchTerm} allGroups={allGroups} />
             </TabsContent>
 
-            {/* Users Tab */}
-            <TabsContent value="users" className="mt-6">
+            <TabsContent value="users" className="mt-4 outline-none">
               <AdminUsersTable searchTerm={searchTerm} allUsers={allUsers} />
             </TabsContent>
           </Tabs>
-        </div>
-      </div>
+        </section>
+      </main>
 
       {/* Decease Check Dialog */}
       <Dialog open={showDeceaseDialog} onOpenChange={setShowDeceaseDialog}>

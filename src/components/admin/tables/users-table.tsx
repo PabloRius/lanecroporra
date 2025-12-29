@@ -102,6 +102,7 @@ export const AdminUsersTable = ({
                       Email <ArrowUpDown className="h-3 w-3" />
                     </Button>
                   </TableHead>
+                  <TableHead className="hidden md:table-cell">Uid</TableHead>
                   <TableHead>
                     <Button
                       variant="ghost"
@@ -123,6 +124,9 @@ export const AdminUsersTable = ({
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">
                       {user.email}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">
+                      {user.uid.substring(0, 15)}...
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="font-mono">
