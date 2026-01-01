@@ -25,5 +25,5 @@ export function ResolveUserId({ userId }: { userId: string }) {
     return <div>Loading...</div>;
   }
 
-  return <div>{userName || "User not found"}</div>;
+  return <div className="truncate">{userName || "User not found"}</div>;
 }

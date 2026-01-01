@@ -51,7 +51,6 @@ import {
   UserMinus,
   Users,
 } from "lucide-react";
-import { redirect } from "next/navigation";
 import { useState } from "react";
 import { InviteCard } from "./invite-card";
 import { ResolveUserId } from "./resolve-user-id";
@@ -83,7 +82,7 @@ export default function GroupManagementModal({
   const [saving, setSaving] = useState(false);
 
   if (!currentUser) {
-    redirect("/login");
+    return null;
   }
 
   // === Actions ===
@@ -161,7 +160,7 @@ export default function GroupManagementModal({
                       <Button
                         key={tab.id}
                         variant={activeTab === tab.id ? "default" : "ghost"}
-                        className={`justify-start whitespace-nowrap lg:w-full ${
+                        className={`lg:justify-start whitespace-nowrap lg:w-full ${
                           activeTab === tab.id ? "" : "bg-transparent"
                         }`}
                         onClick={() =>
@@ -174,7 +173,7 @@ export default function GroupManagementModal({
                           )
                         }
                       >
-                        <Icon className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <Icon className="w-4 h-4 lg:mr-2 flex-shrink-0" />
                         <span className="hidden sm:inline">{tab.label}</span>
                       </Button>
                     );
@@ -184,336 +183,326 @@ export default function GroupManagementModal({
             </div>
 
             {/* Content */}
-            <div className="flex flex-1 w-full max-h-full ">
-              <div className="flex flex-1 w-full p-4 lg:p-6 ">
-                {activeTab === "invite" && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium mb-2">Invitaciones Activas</h4>
-                    <Button
-                      onClick={handleGenerateNewInvite}
-                      variant="outline"
-                      className="bg-transparent"
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Generar Nuevo Enlace
-                    </Button>
-                    <div className="space-y-2 max-w-min overflow-hidden">
-                      {group?.inviteLink && (
-                        <InviteCard tokenId={group!.inviteLink} />
-                      )}
-                    </div>
+            <div className="flex flex-1 w-full h-full overflow-y-auto p-4 lg:p-6">
+              {activeTab === "invite" && (
+                <div className="space-y-4">
+                  <h4 className="font-medium mb-2">Invitaciones Activas</h4>
+                  <Button
+                    onClick={handleGenerateNewInvite}
+                    variant="outline"
+                    className="bg-transparent"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Generar Nuevo Enlace
+                  </Button>
+                  <div className="space-y-2 max-w-min overflow-hidden">
+                    {group?.inviteLink && (
+                      <InviteCard tokenId={group!.inviteLink} />
+                    )}
                   </div>
-                )}
+                </div>
+              )}
 
-                {activeTab === "settings" && (
-                  <div className="space-y-6">
-                    <h3 className="text-lg font-semibold">
-                      Configuración del Grupo
-                    </h3>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="group-name">Nombre del Grupo</Label>
+              {activeTab === "settings" && (
+                <div className="space-y-6 h-max">
+                  <h3 className="text-lg font-semibold">
+                    Configuración del Grupo
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="group-name">Nombre del Grupo</Label>
+                      <Input
+                        id="group-name"
+                        value={groupName}
+                        onChange={(e) => {
+                          setGroupName(e.target.value);
+                        }}
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="group-description">Descripción</Label>
+                      <Textarea
+                        id="group-description"
+                        value={groupDescription}
+                        onChange={(e) => {
+                          setGroupDescription(e.target.value);
+                        }}
+                        className="mt-2 resize-none max-h-[20vh] overflow-auto"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col justify-between">
+                        <Label htmlFor="max-bets">Máximo de Apuestas</Label>
                         <Input
-                          id="group-name"
-                          value={groupName}
-                          onChange={(e) => {
-                            setGroupName(e.target.value);
-                          }}
+                          id="max-bets"
+                          type="number"
+                          value={maxBets}
+                          onChange={(e) => setMaxBets(parseInt(e.target.value))}
                           className="mt-2"
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="group-description">Descripción</Label>
-                        <Textarea
-                          id="group-description"
-                          value={groupDescription}
-                          onChange={(e) => {
-                            setGroupDescription(e.target.value);
-                          }}
-                          className="mt-2 resize-none max-h-[20vh] overflow-auto"
-                          rows={3}
+                      <div className="flex flex-col justify-between">
+                        <Label htmlFor="deadline">Fecha Límite</Label>
+                        <Input
+                          id="deadline"
+                          type="date"
+                          value={deadline.toISOString().split("T")[0]}
+                          onChange={(e) =>
+                            setDeadline(new Date(e.target.value))
+                          }
+                          className="mt-2"
                         />
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="flex flex-col justify-between">
-                          <Label htmlFor="max-bets">Máximo de Apuestas</Label>
-                          <Input
-                            id="max-bets"
-                            type="number"
-                            value={maxBets}
-                            onChange={(e) =>
-                              setMaxBets(parseInt(e.target.value))
-                            }
-                            className="mt-2"
-                          />
-                        </div>
-                        <div className="flex flex-col justify-between">
-                          <Label htmlFor="deadline">Fecha Límite</Label>
-                          <Input
-                            id="deadline"
-                            type="date"
-                            value={deadline.toISOString().split("T")[0]}
-                            onChange={(e) =>
-                              setDeadline(new Date(e.target.value))
-                            }
-                            className="mt-2"
-                          />
-                        </div>
-                      </div>
-                      <Button
-                        onClick={handleSaveChanges}
-                        disabled={saving}
-                        className="w-full sm:w-auto"
-                      >
-                        {saving ? "Guardando..." : "Guardar Cambios"}
-                      </Button>
                     </div>
+                    <Button
+                      onClick={handleSaveChanges}
+                      disabled={saving}
+                      className="w-full sm:w-auto"
+                    >
+                      {saving ? "Guardando..." : "Guardar Cambios"}
+                    </Button>
                   </div>
-                )}
+                </div>
+              )}
 
-                {activeTab === "members" && (
-                  <div className="space-y-6 flex-1">
-                    <h3 className="text-lg font-semibold">
-                      Miembros del Grupo
-                    </h3>
-                    <div className="space-y-3">
-                      {Object.keys(group.members!).map((memberId) => {
-                        const member = group.members![memberId];
-                        const isAdmin = member.role === "admin";
-                        const isCreator = memberId === group.creatorId;
-                        const isCurrentUserAdmin =
-                          group.members![currentUser!.uid]?.role === "admin";
+              {activeTab === "members" && (
+                <div className="space-y-6 h-max w-full">
+                  <h3 className="text-lg font-semibold">Miembros del Grupo</h3>
+                  <div className="space-y-3">
+                    {Object.keys(group.members!).map((memberId) => {
+                      const member = group.members![memberId];
+                      const isAdmin = member.role === "admin";
+                      const isCreator = memberId === group.creatorId;
+                      const isCurrentUserAdmin =
+                        group.members![currentUser!.uid]?.role === "admin";
 
-                        return (
-                          <div
-                            key={memberId}
-                            className="flex items-center justify-between p-3 border border-border rounded-lg"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                {isCreator ? (
-                                  <Crown className="w-4 h-4 text-yellow-500" />
-                                ) : isAdmin ? (
-                                  <ShieldCheck className="w-4 h-4 text-blue-500" />
-                                ) : (
-                                  <User className="w-4 h-4 text-gray-500" />
-                                )}
-                              </div>
-                              <ResolveUserId userId={memberId} />
+                      return (
+                        <div
+                          key={memberId}
+                          className="flex items-center w-full justify-between p-3 border border-border rounded-lg"
+                        >
+                          <div className="flex items-center gap-3 w-7/12">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              {isCreator ? (
+                                <Crown className="w-4 h-4 text-yellow-500" />
+                              ) : isAdmin ? (
+                                <ShieldCheck className="w-4 h-4 text-blue-500" />
+                              ) : (
+                                <User className="w-4 h-4 text-gray-500" />
+                              )}
                             </div>
+                            <ResolveUserId userId={memberId} />
+                          </div>
 
-                            <div className="flex gap-2">
-                              {/* Promote to Admin button (only if not admin and current user is admin) */}
-                              {!isAdmin && isCurrentUserAdmin && (
+                          <div className="flex gap-2 w-5/12 max-w-max">
+                            {/* Promote to Admin button (only if not admin and current user is admin) */}
+                            {!isAdmin && isCurrentUserAdmin && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  await promoteToAdmin(group.id, memberId);
+                                  reloadGroupData();
+                                }}
+                                className="text-clip"
+                              >
+                                <span className="hidden sm:block">
+                                  Promover a Admin
+                                </span>
+                                <span className="sm:hidden">
+                                  <Crown className="w-4 h-4" />
+                                </span>
+                              </Button>
+                            )}
+
+                            {/* Kick button only if not admin */}
+                            {!isAdmin && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setMemberToKick(memberId)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                              >
+                                <UserMinus className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "lists" && (
+                <div className="flex flex-col h-max">
+                  {/* Header stays visible */}
+                  <div className="mb-2">
+                    <h3 className="text-lg font-semibold">
+                      Gestión de Listas (Admin)
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Marca un nombre como fallecido en todas las listas de este
+                      grupo.
+                    </p>
+                  </div>
+
+                  {/* Scrollable rows */}
+                  <div className="space-y-2">
+                    {(() => {
+                      const summary = new Map<
+                        string,
+                        { total: number; deceased: number; alive: number }
+                      >();
+                      const norm = (s: string) =>
+                        s
+                          .normalize("NFKD")
+                          .replace(/\p{Diacritic}/gu, "")
+                          .trim()
+                          .toLowerCase();
+
+                      for (const memberId of Object.keys(group.members ?? {})) {
+                        const m = group.members![memberId];
+                        for (const bet of m.list?.bets ?? []) {
+                          const key = norm(bet.name);
+                          const current = summary.get(key) ?? {
+                            total: 0,
+                            deceased: 0,
+                            alive: 0,
+                          };
+                          current.total += 1;
+                          if (bet.status === "deceased") current.deceased += 1;
+                          else current.alive += 1;
+                          summary.set(key, current);
+                        }
+                      }
+
+                      const displayNameByKey = new Map<string, string>();
+                      for (const memberId of Object.keys(group.members ?? {})) {
+                        const m = group.members![memberId];
+                        for (const bet of m.list?.bets ?? []) {
+                          const key = norm(bet.name);
+                          if (!displayNameByKey.has(key))
+                            displayNameByKey.set(key, bet.name);
+                        }
+                      }
+
+                      const rows = Array.from(summary.entries())
+                        .map(([key, stats]) => ({
+                          key,
+                          displayName: displayNameByKey.get(key) ?? key,
+                          ...stats,
+                        }))
+                        .sort((a, b) => b.total - a.total);
+
+                      if (!rows.length) {
+                        return (
+                          <div className="text-sm text-muted-foreground">
+                            No hay apuestas en las listas aún.
+                          </div>
+                        );
+                      }
+
+                      return rows.map(
+                        ({ key, displayName, total, deceased, alive }) => {
+                          const allDeceased = deceased === total;
+                          return (
+                            <div
+                              key={key}
+                              className="flex flex-col w-full mx-auto items-center justify-between p-3 border rounded-lg"
+                            >
+                              <p
+                                className={`font-medium truncate ${
+                                  allDeceased ? "line-through text-red-600" : ""
+                                }`}
+                              >
+                                {displayName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Total: {total}
+                              </p>
+
+                              <div className="flex items-center gap-2 mt-2">
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={allDeceased}
+                                  onClick={async () => {
+                                    await setNameStatusAcrossGroup(
+                                      group.id,
+                                      displayName,
+                                      "deceased"
+                                    );
+                                    reloadGroupData();
+                                  }}
+                                  className="flex items-center gap-2"
+                                  title={
+                                    allDeceased
+                                      ? "Ya está marcado como fallecido en todas las listas"
+                                      : "Marcar como fallecido en todas las listas"
+                                  }
+                                >
+                                  <Ban className="w-4 h-4" />
+                                  Marcar fallecido
+                                </Button>
+
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  disabled={alive === total}
                                   onClick={async () => {
-                                    await promoteToAdmin(group.id, memberId);
+                                    await setNameStatusAcrossGroup(
+                                      group.id,
+                                      displayName,
+                                      "alive"
+                                    );
                                     reloadGroupData();
                                   }}
                                 >
-                                  Promover a Admin
+                                  Marcar vivo
                                 </Button>
-                              )}
-
-                              {/* Kick button only if not admin */}
-                              {!isAdmin && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setMemberToKick(memberId)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
-                                >
-                                  <UserMinus className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "danger" && (
-                  <div className="space-y-6 flex-1">
-                    <h3 className="text-lg font-semibold text-red-600 dark:text-red-400">
-                      Zona Peligrosa
-                    </h3>
-                    <Card className="border-red-200 dark:border-red-800">
-                      <CardHeader>
-                        <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
-                          <Trash2 className="w-5 h-5" />
-                          Eliminar Grupo
-                        </CardTitle>
-                        <CardDescription>
-                          Esta acción no se puede deshacer. Se eliminarán todos
-                          los datos del grupo, incluyendo las listas de todos
-                          los miembros.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button
-                          variant="destructive"
-                          onClick={() => setDeleteDialogOpen(true)}
-                          className="w-full sm:w-auto"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Eliminar Grupo
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-
-                {activeTab === "lists" && (
-                  <div className="flex flex-col h-full">
-                    {/* Header stays visible */}
-                    <div className="mb-2">
-                      <h3 className="text-lg font-semibold">
-                        Gestión de Listas (Admin)
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Marca un nombre como fallecido en todas las listas de
-                        este grupo.
-                      </p>
-                    </div>
-
-                    {/* Scrollable rows */}
-                    <div className="flex-1 overflow-y-auto space-y-2">
-                      {(() => {
-                        const summary = new Map<
-                          string,
-                          { total: number; deceased: number; alive: number }
-                        >();
-                        const norm = (s: string) =>
-                          s
-                            .normalize("NFKD")
-                            .replace(/\p{Diacritic}/gu, "")
-                            .trim()
-                            .toLowerCase();
-
-                        for (const memberId of Object.keys(
-                          group.members ?? {}
-                        )) {
-                          const m = group.members![memberId];
-                          for (const bet of m.list?.bets ?? []) {
-                            const key = norm(bet.name);
-                            const current = summary.get(key) ?? {
-                              total: 0,
-                              deceased: 0,
-                              alive: 0,
-                            };
-                            current.total += 1;
-                            if (bet.status === "deceased")
-                              current.deceased += 1;
-                            else current.alive += 1;
-                            summary.set(key, current);
-                          }
-                        }
-
-                        const displayNameByKey = new Map<string, string>();
-                        for (const memberId of Object.keys(
-                          group.members ?? {}
-                        )) {
-                          const m = group.members![memberId];
-                          for (const bet of m.list?.bets ?? []) {
-                            const key = norm(bet.name);
-                            if (!displayNameByKey.has(key))
-                              displayNameByKey.set(key, bet.name);
-                          }
-                        }
-
-                        const rows = Array.from(summary.entries())
-                          .map(([key, stats]) => ({
-                            key,
-                            displayName: displayNameByKey.get(key) ?? key,
-                            ...stats,
-                          }))
-                          .sort((a, b) => b.total - a.total);
-
-                        if (!rows.length) {
-                          return (
-                            <div className="text-sm text-muted-foreground">
-                              No hay apuestas en las listas aún.
+                              </div>
                             </div>
                           );
                         }
-
-                        return rows.map(
-                          ({ key, displayName, total, deceased, alive }) => {
-                            const allDeceased = deceased === total;
-                            return (
-                              <div
-                                key={key}
-                                className="flex flex-col w-4/5 mx-auto mt-2 items-center justify-between p-3 border rounded-lg"
-                              >
-                                <div className="w-full flex-1">
-                                  <p
-                                    className={`font-medium truncate ${
-                                      allDeceased
-                                        ? "line-through text-red-600"
-                                        : ""
-                                    }`}
-                                  >
-                                    {displayName}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Total: {total} • Vivos: {alive} •
-                                    Fallecidos: {deceased}
-                                  </p>
-                                </div>
-
-                                <div className="flex items-center gap-2 mt-2">
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    disabled={allDeceased}
-                                    onClick={async () => {
-                                      await setNameStatusAcrossGroup(
-                                        group.id,
-                                        displayName,
-                                        "deceased"
-                                      );
-                                      reloadGroupData();
-                                    }}
-                                    className="flex items-center gap-2"
-                                    title={
-                                      allDeceased
-                                        ? "Ya está marcado como fallecido en todas las listas"
-                                        : "Marcar como fallecido en todas las listas"
-                                    }
-                                  >
-                                    <Ban className="w-4 h-4" />
-                                    Marcar fallecido
-                                  </Button>
-
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={alive === total}
-                                    onClick={async () => {
-                                      await setNameStatusAcrossGroup(
-                                        group.id,
-                                        displayName,
-                                        "alive"
-                                      );
-                                      reloadGroupData();
-                                    }}
-                                  >
-                                    Marcar vivo
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          }
-                        );
-                      })()}
-                    </div>
+                      );
+                    })()}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {activeTab === "danger" && (
+                <div className="space-y-6 h-max w-full">
+                  <h3 className="text-lg font-semibold text-red-600 dark:text-red-400">
+                    Zona Peligrosa
+                  </h3>
+                  <Card className="border-red-200 dark:border-red-800">
+                    <CardHeader>
+                      <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
+                        <Trash2 className="w-5 h-5" />
+                        Eliminar Grupo
+                      </CardTitle>
+                      <CardDescription>
+                        Esta acción no se puede deshacer. Se eliminarán todos
+                        los datos del grupo, incluyendo las listas de todos los
+                        miembros.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button
+                        variant="destructive"
+                        onClick={() => setDeleteDialogOpen(true)}
+                        className="w-full sm:w-auto"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Eliminar Grupo
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           </div>
         </DialogContent>
