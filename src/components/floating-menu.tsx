@@ -51,15 +51,17 @@ export function FloatingMenu() {
           )}
 
           {/* Profile button */}
-          <Link href={currentUser ? "/profile" : "/login"}>
-            <Button
-              size="icon"
-              variant="outline"
-              className="h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 hover:bg-accent transition-all duration-200 shadow-lg"
-            >
-              <UserIcon className="h-5 w-5" />
-            </Button>
-          </Link>
+          {user && (
+            <Link href={currentUser ? "/profile" : "/login"}>
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 hover:bg-accent transition-all duration-200 shadow-lg"
+              >
+                <UserIcon className="h-5 w-5" />
+              </Button>
+            </Link>
+          )}
 
           <div className="shrink-0">
             <ModeToggle />
