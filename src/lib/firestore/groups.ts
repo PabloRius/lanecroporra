@@ -218,7 +218,7 @@ export async function joinGroup(userId: string, tokenId: string) {
   const inviteData = inviteSnap.data() as InviteDoc;
 
   const memberRef = doc(db, "groups", inviteData.groupId, "members", userId);
-  const groupRef = doc(db, "groups", inviteData.groupId, "private");
+  const groupRef = doc(db, "groups", inviteData.groupId);
 
   setDoc(memberRef, {
     role: "member",
@@ -250,7 +250,7 @@ export async function leaveGroup(userId: string, groupId: string) {
   }
 
   const memberRef = doc(db, "groups", groupId, "members", userId);
-  const groupRef = doc(db, "groups", groupId, "private");
+  const groupRef = doc(db, "groups", groupId);
 
   const now = Timestamp.now();
 
