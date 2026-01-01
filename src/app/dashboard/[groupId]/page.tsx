@@ -138,15 +138,17 @@ export default function GroupPage({
     : false;
 
   return (
-    <div className="flex flex-1 h-{dvh} bg-background relative">
+    <div className="flex max-w-screen h-{dvh} bg-background relative">
       {/* Right Panel - Group Details */}
-      <div className="relative flex-1 flex flex-col min-w-0">
+      <div className="flex flex-col min-w-0">
         <>
           <div className="lg:hidden p-4 border-b border-border bg-card flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => setOpen()}>
               <Menu className="w-4 h-4" />
             </Button>
-            <h2 className="font-semibold truncate flex-1">{group.name}</h2>
+            <h2 className="font-semibold truncate text-center flex-1">
+              {group.name}
+            </h2>
             {isAdmin && (
               <Button
                 variant="ghost"
@@ -158,10 +160,10 @@ export default function GroupPage({
             )}
           </div>
 
-          <div className="lg:hidden  left-0 right-0 z-30 bg-card border-b border-border p-3">
+          <div className="lg:hidden left-0 right-0 z-30 bg-card border-b border-border p-2">
             <div className="grid grid-cols-3 gap-2">
-              <Card className="shadow-none border-muted">
-                <CardContent className="p-2 text-center">
+              <Card className="shadow-none border-muted p-0">
+                <CardContent className="p-2 text-center h-full flex items-center justify-center">
                   <div className="flex flex-col items-center">
                     <Users className="w-3 h-3 text-muted-foreground mb-1" />
                     <p className="text-xs font-medium">
@@ -174,8 +176,8 @@ export default function GroupPage({
                 </CardContent>
               </Card>
 
-              <Card className="shadow-none border-muted overflow-hidden">
-                <CardContent className="p-3 text-center">
+              <Card className="shadow-none border-muted overflow-hidden p-0">
+                <CardContent className="p-3 text-center h-full flex items-center justify-center">
                   <div className="flex flex-col items-center">
                     {/* 1. ESTADO: EN TIEMPO (Draft y con tiempo restante) */}
                     {timeLeft &&
@@ -222,8 +224,8 @@ export default function GroupPage({
                 </CardContent>
               </Card>
 
-              <Card className="shadow-none border-muted">
-                <CardContent className="p-2 text-center">
+              <Card className="shadow-none border-muted p-0">
+                <CardContent className="p-2 text-center h-full flex items-center justify-center">
                   <div className="flex flex-col items-center">
                     <Trophy className="w-3 h-3 text-muted-foreground mb-1" />
                     <p className="text-xs font-medium">
@@ -344,8 +346,8 @@ export default function GroupPage({
             </div>
           </div>
 
-          <div className="flex-1 p-4 lg:p-6 overflow-y-auto lg:pt-6 ">
-            <div className="grid gap-4 lg:gap-6">
+          <div className="p-4 lg:p-6 lg:pt-6 ">
+            <div className="flex flex-col gap-4 lg:gap-6">
               <Card>
                 <CardHeader className="pb-3 lg:pb-6">
                   <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -369,10 +371,10 @@ export default function GroupPage({
                     Tu lista de famosos para este grupo
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-y-scroll max-h-[55vh]">
                   {group.members![user.uid] &&
                   Object.keys(group.members![user.uid].list).length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3 max-w-full">
                       {group.members![user.uid].list.bets.map(
                         (person, index) => (
                           <div
@@ -429,7 +431,7 @@ export default function GroupPage({
                     Puntuación de todos los miembros del grupo
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-y-scroll max-h-[35vh]">
                   <div className="space-y-3 lg:space-y-4">
                     {group.members &&
                       Object.entries(group.members).map(

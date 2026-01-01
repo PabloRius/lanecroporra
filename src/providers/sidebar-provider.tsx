@@ -124,7 +124,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0 transition-transform duration-300 ease-in-out
         fixed lg:relative z-50 lg:z-auto
-        w-full sm:w-80 lg:w-80 h-dvh
+        w-screen sm:w-80 lg:w-80 h-dvh
         border-r border-border bg-card
       `}
         >
