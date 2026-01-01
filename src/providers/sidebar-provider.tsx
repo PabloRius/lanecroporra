@@ -110,7 +110,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     <SidebarContext.Provider
       value={{ toggle, setOpen, setClose, reloadGroups: fetchData }}
     >
-      <div className="flex h-screen bg-background relative">
+      <div className="flex min-h-screen bg-background relative">
         {isOpen && (
           <div
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -124,7 +124,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0 transition-transform duration-300 ease-in-out
         fixed lg:relative z-50 lg:z-auto
-        w-full sm:w-80 lg:w-80 h-full
+        w-full sm:w-80 lg:w-80 h-dvh
         border-r border-border bg-card
       `}
         >
