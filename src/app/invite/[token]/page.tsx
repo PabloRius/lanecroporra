@@ -15,9 +15,12 @@ import { GroupDoc } from "@/models/Group";
 import { useAuth } from "@/providers/auth-provider";
 import {
   AlertCircle,
+  AlertTriangle,
   Calendar,
   CircleChevronDown,
   Loader2,
+  Lock,
+  Timer,
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -164,6 +167,9 @@ export default function InvitePage({
     !!groupData.members[currentUser.uid];
 
   const timeLeft = calculateTimeLeft(groupData.deadline);
+  const isGroupActive = groupData.status === "activo";
+  const isProrroga = timeLeft.expired && !isGroupActive;
+  const canJoin = !isGroupActive && !isMember;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -196,21 +202,42 @@ export default function InvitePage({
 
           {/* Group Stats */}
           <div className="grid grid-cols-1 gap-4">
-            <Card className="bg-muted/20">
+            <Card
+              className={`border-none ${
+                isGroupActive
+                  ? "bg-red-50 dark:bg-red-950/20"
+                  : isProrroga
+                  ? "bg-amber-50 dark:bg-amber-950/20"
+                  : "bg-muted/20"
+              }`}
+            >
               <CardContent className="p-4 text-center">
-                <Calendar className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
                 {!timeLeft.expired ? (
                   <>
-                    <p className="font-semibold">
+                    <Calendar className="w-6 h-6 mx-auto mb-2 text-primary" />
+                    <p className="font-bold text-lg">
                       {timeLeft.months}m {timeLeft.days}d
                     </p>
-                    <p className="text-sm text-muted-foreground">Restantes</p>
+                    <p className="text-xs text-muted-foreground uppercase">
+                      Tiempo restante para editar lista
+                    </p>
+                  </>
+                ) : isGroupActive ? (
+                  <>
+                    <Lock className="w-6 h-6 mx-auto mb-2 text-red-500" />
+                    <p className="font-bold text-red-600">
+                      Inscripciones Cerradas
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      El juego ya ha comenzado para este grupo
+                    </p>
                   </>
                 ) : (
                   <>
-                    <p className="font-semibold text-red-500">Expirado</p>
-                    <p className="text-sm text-muted-foreground">
-                      Fecha límite
+                    <Timer className="w-6 h-6 mx-auto mb-2 text-amber-500 animate-pulse" />
+                    <p className="font-bold text-amber-600">En Prórroga</p>
+                    <p className="text-xs text-muted-foreground uppercase">
+                      Última oportunidad para entrar
                     </p>
                   </>
                 )}
@@ -219,44 +246,68 @@ export default function InvitePage({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Button
               onClick={handleJoinGroup}
-              disabled={joining || timeLeft.expired || isMember}
-              className="flex-1"
+              disabled={joining || !canJoin}
+              className={`flex-1 h-12 text-base`}
             >
               {joining ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Uniéndose...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uniéndose...
                 </>
+              ) : isMember ? (
+                "Ya eres miembro"
+              ) : isGroupActive ? (
+                "Grupo Cerrado"
               ) : (
-                "Unirse al Grupo"
+                "Unirse ahora"
               )}
             </Button>
             <Button
               variant="outline"
               onClick={() => redirect("/dashboard")}
-              className="flex-1 bg-transparent"
+              className="flex-1 h-12 bg-transparent"
             >
-              Cancelar
+              Volver
             </Button>
           </div>
 
-          {isMember && (
-            <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-              <p className="text-sm text-green-700 dark:text-green-400">
-                Ya eres miembro de este grupo
-              </p>
-            </div>
-          )}
-          {timeLeft.expired && (
-            <div className="text-center p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
-              <p className="text-sm text-red-700 dark:text-red-400">
-                Este grupo ha expirado y ya no acepta nuevos miembros
-              </p>
-            </div>
-          )}
+          <div className="space-y-3">
+            {isMember && (
+              <div className="flex items-center gap-2 justify-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm font-medium">
+                <AlertCircle className="w-4 h-4" />
+                Ya formas parte de este grupo. Revisa tu lista en el dashboard.
+              </div>
+            )}
+
+            {isProrroga && !isMember && (
+              <div className="flex flex-col items-center gap-1 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm">
+                <div className="flex items-center gap-2 font-bold">
+                  <AlertTriangle className="w-4 h-4" />
+                  ¡Atención! Período de prórroga
+                </div>
+                <p className="text-center opacity-90">
+                  La fecha límite ha pasado. Si te unes ahora, debes completar
+                  tu lista inmediatamente antes de que el administrador cierre
+                  el grupo.
+                </p>
+              </div>
+            )}
+
+            {isGroupActive && !isMember && (
+              <div className="flex flex-col items-center gap-1 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 text-sm">
+                <div className="flex items-center gap-2 font-bold">
+                  <Lock className="w-4 h-4" />
+                  Acceso denegado
+                </div>
+                <p className="text-center opacity-90">
+                  Este grupo ha comenzado la competición. No se permiten nuevos
+                  ingresos para mantener la justicia en las puntuaciones.
+                </p>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
