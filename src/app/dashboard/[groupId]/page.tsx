@@ -138,9 +138,9 @@ export default function GroupPage({
     : false;
 
   return (
-    <div className="flex max-w-screen h-{dvh} bg-background relative">
+    <div className="flex flex-1 max-w-screen h-{dvh} bg-background relative">
       {/* Right Panel - Group Details */}
-      <div className="flex flex-col min-w-0">
+      <div className="relative flex flex-1 flex-col min-w-0">
         <>
           <div className="lg:hidden p-4 border-b border-border bg-card flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => setOpen()}>

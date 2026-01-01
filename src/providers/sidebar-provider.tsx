@@ -125,7 +125,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
         lg:translate-x-0 transition-transform duration-300 ease-in-out
         fixed lg:relative z-50 lg:z-auto
         w-screen sm:w-80 lg:w-80 h-dvh
-        border-r border-border bg-card
+        border-r border-border bg-card max-h-screen
       `}
         >
           <div className="p-4 border-b border-border">
@@ -204,7 +204,9 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
             })}
           </div>
         </div>
-        {children}
+        <div className="sm:max-h-screen overflow-y-scroll flex-1">
+          {children}
+        </div>
       </div>
     </SidebarContext.Provider>
   );
