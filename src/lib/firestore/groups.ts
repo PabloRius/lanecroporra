@@ -34,15 +34,27 @@ export async function getAllGroups(): Promise<GroupDoc[] | null> {
       return [];
     }
 
-    const groups = querySnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        ...data,
-        id: doc.id,
-        // createdAt: (data.createdAt as Timestamp).toDate() || new Date(),
-        deadline: (data.deadline as Timestamp).toDate() || new Date(),
-      } as unknown as GroupDoc;
-    });
+    const groups = await Promise.all(
+      querySnapshot.docs.map(async (doc) => {
+        const data = doc.data();
+        const groupId = doc.id;
+
+        const membersRef = collection(db, "groups", groupId, "members");
+        const membersSnapshot = await getDocs(membersRef);
+
+        const members: MembersMap = {};
+        membersSnapshot.forEach((mDoc) => {
+          members[mDoc.id] = mDoc.data() as MemberDoc;
+        });
+        return {
+          ...data,
+          id: doc.id,
+          // createdAt: (data.createdAt as Timestamp).toDate() || new Date(),
+          deadline: (data.deadline as Timestamp).toDate() || new Date(),
+          members,
+        } as unknown as GroupDoc;
+      })
+    );
 
     return groups;
   } catch (error) {

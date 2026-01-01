@@ -112,7 +112,7 @@ function AdminContent() {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin || user === null) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background p-4">
         <Card className="max-w-md w-full border-red-200 dark:border-red-900">

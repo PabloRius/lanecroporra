@@ -142,69 +142,73 @@ export const AdminGroupsTable = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedGroups.map((group) => (
-                  <TableRow
-                    key={group.id}
-                    className="group hover:bg-muted/50 transition-colors"
-                  >
-                    <TableCell className="font-medium text-primary">
-                      {group.name}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-xs font-mono text-muted-foreground">
-                      {group.creatorId.substring(0, 8)}...
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="font-normal">
-                        {group.members ? Object.keys(group.members).length : 0}{" "}
-                        usuarios
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm italic">
-                      {formatDate(group.deadline)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className="capitalize"
-                        variant={
-                          group.status === "activo" ? "default" : "outline"
-                        }
-                      >
-                        {group.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">Detalles</TooltipContent>
-                        </Tooltip>
+                {sortedGroups.map((group) => {
+                  return (
+                    <TableRow
+                      key={group.id}
+                      className="group hover:bg-muted/50 transition-colors"
+                    >
+                      <TableCell className="font-medium text-primary">
+                        {group.name}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-xs font-mono text-muted-foreground">
+                        {group.creatorId.substring(0, 8)}...
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="font-normal">
+                          {group.members
+                            ? Object.keys(group.members).length
+                            : 0}{" "}
+                          usuarios
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-sm italic">
+                        {formatDate(group.deadline)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className="capitalize"
+                          variant={
+                            group.status === "activo" ? "default" : "outline"
+                          }
+                        >
+                          {group.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">Detalles</TooltipContent>
+                          </Tooltip>
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="bg-red-600">
-                            Eliminar
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-red-600">
+                              Eliminar
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
