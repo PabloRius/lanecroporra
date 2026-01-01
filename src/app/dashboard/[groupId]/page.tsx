@@ -119,7 +119,7 @@ export default function GroupPage({
 
   if (loading || user === undefined || group === undefined) {
     return (
-      <div className="flex flex-1 w-full items-center justify-center">
+      <div className="flex flex-1 w-full h-full items-center justify-center">
         <Loader2 className="animate-spin" />
       </div>
     );
