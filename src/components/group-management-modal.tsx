@@ -204,7 +204,7 @@ export default function GroupManagementModal({
               )}
 
               {activeTab === "settings" && (
-                <div className="space-y-6 h-max">
+                <div className="space-y-6 h-max w-full">
                   <h3 className="text-lg font-semibold">
                     Configuración del Grupo
                   </h3>
@@ -337,7 +337,7 @@ export default function GroupManagementModal({
               )}
 
               {activeTab === "lists" && (
-                <div className="flex flex-col h-max">
+                <div className="flex flex-col h-max w-full">
                   {/* Header stays visible */}
                   <div className="mb-2">
                     <h3 className="text-lg font-semibold">
