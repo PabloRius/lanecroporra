@@ -6,6 +6,7 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
 import { Playfair_Display } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -119,6 +120,7 @@ html {
           >
             {children}
             <FloatingMenu />
+            <Toaster />
           </ThemeProvider>
         </AuthProvider>
         <Analytics />

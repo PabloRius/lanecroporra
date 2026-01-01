@@ -4,6 +4,6 @@ export interface UserDoc {
   displayName: string;
   createdAt: Date;
   groups: Array<string>;
-  role?: "user" | "admin";
+  role?: "user" | "admin" | "creator";
   status: "active" | "inactive" | "banned";
 }

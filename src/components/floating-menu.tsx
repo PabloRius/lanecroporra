@@ -4,12 +4,10 @@ import { Button } from "@/components/ui/button";
 import { getUserById } from "@/lib/firestore/users";
 import { UserDoc } from "@/models/User";
 import { useAuth } from "@/providers/auth-provider";
-import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { Menu, ShieldUser, User as UserIcon, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ModeToggle } from "./mode-toggle";
-import { Tooltip } from "./ui/tooltip";
 
 export function FloatingMenu() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -20,87 +18,59 @@ export function FloatingMenu() {
     if (currentUser && !loading) {
       const fetchUser = async () => {
         const userData = await getUserById(currentUser.uid);
-        if (!userData) {
-          console.error("User not found");
-          setUser(null);
-          return;
-        }
-        setUser(userData);
+        if (userData) setUser(userData);
       };
       fetchUser();
     }
   }, [currentUser, loading]);
 
-  const isAdmin = user?.role === "admin" || "creator";
+  // Corrección en la lógica de admin
+  const isAdmin = user?.role === "admin" || user?.role === "creator";
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center">
         <div
-          className={`flex items-center gap-3 transition-all duration-300 ease-in-out ${
+          className={`flex items-center transition-all duration-300 ease-in-out overflow-hidden ${
             isExpanded
-              ? "opacity-100 translate-x-0 pointer-events-auto"
-              : "opacity-0 translate-x-8 pointer-events-none"
+              ? "opacity-100 translate-x-0 max-w-[300px] gap-3 mr-3"
+              : "opacity-0 translate-x-8 max-w-0 gap-0 mr-0 pointer-events-none"
           }`}
         >
           {/* Admin button */}
           {isAdmin && (
-            <Tooltip>
-              <TooltipContent>
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Ir a panel Admin
-                </span>
-              </TooltipContent>
-              <TooltipTrigger asChild>
-                <Link href="/admin">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 hover:bg-accent hover:scale-110 transition-all duration-200 shadow-lg"
-                  >
-                    <ShieldUser className="h-5 w-5" />
-                    <span className="sr-only">Admin</span>
-                  </Button>
-                </Link>
-              </TooltipTrigger>
-            </Tooltip>
+            <Link href="/admin">
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 shadow-lg shrink-0"
+              >
+                <ShieldUser className="h-5 w-5" />
+              </Button>
+            </Link>
           )}
-          {/* Profile button */}
-          <Tooltip>
-            <TooltipContent>
-              {currentUser ? (
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Ver perfil
-                </span>
-              ) : (
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Inicia sesión para ver tu perfil
-                </span>
-              )}
-            </TooltipContent>
-            <TooltipTrigger asChild>
-              <Link href={currentUser ? "/profile" : "/login"}>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 hover:bg-accent hover:scale-110 transition-all duration-200 shadow-lg"
-                >
-                  <UserIcon className="h-5 w-5" />
-                  <span className="sr-only">Perfil</span>
-                </Button>
-              </Link>
-            </TooltipTrigger>
-          </Tooltip>
 
-          {/* Theme toggle button */}
-          <ModeToggle />
+          {/* Profile button */}
+          <Link href={currentUser ? "/profile" : "/login"}>
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 hover:bg-accent transition-all duration-200 shadow-lg"
+            >
+              <UserIcon className="h-5 w-5" />
+            </Button>
+          </Link>
+
+          <div className="shrink-0">
+            <ModeToggle />
+          </div>
         </div>
 
         {/* Main toggle button */}
         <Button
           onClick={() => setIsExpanded(!isExpanded)}
           size="icon"
-          className="h-14 w-14 rounded-full bg-foreground text-background hover:bg-foreground/90 hover:scale-110 transition-all duration-200 shadow-xl"
+          className="h-14 w-14 rounded-full bg-foreground text-background hover:bg-foreground/90 hover:scale-110 transition-all duration-200 shadow-xl relative z-10"
         >
           <Menu
             className={`h-6 w-6 transition-all duration-300 ${

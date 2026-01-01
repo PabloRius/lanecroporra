@@ -362,3 +362,14 @@ export async function promoteToAdmin(groupId: string, memberId: string) {
     throw error;
   }
 }
+
+export async function closeGroupLists(groupId: string) {
+  try {
+    const groupRef = doc(db, "groups", groupId);
+    await updateDoc(groupRef, { status: "activo" });
+    return true;
+  } catch (error) {
+    console.error("Error closing group:", error);
+  }
+  return false;
+}

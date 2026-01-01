@@ -32,8 +32,10 @@ import {
   Calendar,
   EyeOff,
   Loader2,
+  Lock,
   Menu,
   Settings,
+  Timer,
   Trophy,
   Users,
 } from "lucide-react";
@@ -172,26 +174,47 @@ export default function GroupPage({
                 </CardContent>
               </Card>
 
-              <Card className="shadow-none border-muted">
-                <CardContent className="p-2 text-center">
+              <Card className="shadow-none border-muted overflow-hidden">
+                <CardContent className="p-3 text-center">
                   <div className="flex flex-col items-center">
-                    <Calendar className="w-3 h-3 text-muted-foreground mb-1" />
-                    {timeLeft && !timeLeft.expired ? (
+                    {/* 1. ESTADO: EN TIEMPO (Draft y con tiempo restante) */}
+                    {timeLeft &&
+                      !timeLeft.expired &&
+                      group.status !== "activo" && (
+                        <>
+                          <Calendar className="w-3.5 h-3.5 text-muted-foreground mb-1" />
+                          <p className="text-xs font-bold">
+                            {timeLeft.months > 0 && `${timeLeft.months}m `}
+                            {timeLeft.days}d
+                          </p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-tight">
+                            restantes
+                          </p>
+                        </>
+                      )}
+
+                    {/* 2. ESTADO: PRÓRROGA (Expirado pero aún en Draft) */}
+                    {timeLeft?.expired && group.status === "draft" && (
                       <>
-                        <p className="text-xs font-medium">
-                          {timeLeft.months}m {timeLeft.days}d
+                        <Timer className="w-3.5 h-3.5 text-amber-500 mb-1 animate-pulse" />
+                        <p className="text-xs font-bold text-amber-600">
+                          En Prórroga
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          restantes
+                        <p className="text-[9px] leading-tight text-muted-foreground px-1">
+                          Cierre inminente. Termina tu lista ya.
                         </p>
                       </>
-                    ) : (
+                    )}
+
+                    {/* 3. ESTADO: JUEGO EN CURSO (Status Activo) */}
+                    {group.status === "activo" && (
                       <>
-                        <p className="text-xs font-medium text-red-500">
-                          Expirado
+                        <Lock className="w-3.5 h-3.5 text-green-600 mb-1" />
+                        <p className="text-xs font-bold text-green-600">
+                          Lista Cerrada
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          fecha límite
+                        <p className="text-[9px] leading-tight text-muted-foreground px-1">
+                          Puntos contando. Edición deshabilitada.
                         </p>
                       </>
                     )}
@@ -262,22 +285,36 @@ export default function GroupPage({
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      {timeLeft && !timeLeft.expired ? (
+                      {timeLeft &&
+                        !timeLeft.expired &&
+                        group.status !== "activo" && (
+                          <>
+                            <p className="text-sm font-bold">
+                              {timeLeft.months > 0 && `${timeLeft.months}m `}
+                              {timeLeft.days}d
+                            </p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-tight">
+                              restantes
+                            </p>
+                          </>
+                        )}
+                      {timeLeft?.expired && group.status === "draft" && (
                         <>
-                          <p className="text-sm font-medium">
-                            {timeLeft.months} meses, {timeLeft.days} días
+                          <p className="text-sm font-bold text-amber-600">
+                            En Prórroga
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            Tiempo restante
+                          <p className="text-xs leading-tight text-muted-foreground">
+                            Cierre inminente. Termina tu lista ya.
                           </p>
                         </>
-                      ) : (
+                      )}
+                      {group.status === "activo" && (
                         <>
-                          <p className="text-sm font-medium text-red-500">
-                            Expirado
+                          <p className="text-sm font-bold text-green-600">
+                            Lista Cerrada
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            Fecha límite
+                          <p className="text-xs leading-tight text-muted-foreground">
+                            Puntos contando. Edición deshabilitada.
                           </p>
                         </>
                       )}
