@@ -6,4 +6,5 @@ export interface UserDoc {
   groups: Array<string>;
   role?: "user" | "admin" | "creator";
   status: "active" | "inactive" | "banned";
+  tier?: "free" | "pro";
 }

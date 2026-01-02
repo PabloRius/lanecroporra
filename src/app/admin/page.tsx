@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAllGroups } from "@/lib/firestore/groups";
+import { reviewAllRecords } from "@/lib/firestore/review-record";
 import { getAllUsers, getUserById } from "@/lib/firestore/users";
 import { GroupDoc } from "@/models/Group";
 import { UserDoc } from "@/models/User";
@@ -37,6 +38,7 @@ import {
   Search,
   Shield,
   Users,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
@@ -47,6 +49,19 @@ function AdminContent() {
   const [showCloseAllDialog, setShowCloseAllDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedTab, setSelectedTab] = useState("groups");
+
+  const handleSetSelectedTab = (newTab: string) => {
+    setSearchTerm("");
+    setSelectedTab(newTab);
+  };
+
+  const handleChangeSelectedTabAndSearch = (
+    newSearch: string,
+    newTab: string
+  ) => {
+    setSearchTerm(newSearch);
+    setSelectedTab(newTab);
+  };
 
   const { currentUser, loading } = useAuth();
   const [user, setUser] = useState<UserDoc | undefined | null>(undefined);
@@ -147,14 +162,11 @@ function AdminContent() {
     );
   }
 
-  const handleRunDeceaseCheck = () => {
+  const handleRunDeceaseCheck = async () => {
     setIsProcessing(true);
-    // Simulate processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      setShowDeceaseDialog(false);
-      alert("Algoritmo de detección ejecutado. 3 actualizaciones encontradas.");
-    }, 2000);
+    await reviewAllRecords();
+    setIsProcessing(false);
+    setShowDeceaseDialog(false);
   };
 
   const handleCloseAllLists = () => {
@@ -171,7 +183,7 @@ function AdminContent() {
     <div className="min-h-screen bg-slate-50/50 dark:bg-background">
       {/* Sticky Header Responsive */}
       <header className="border-b bg-card/80 backdrop-blur-md sticky top-0 z-30">
-        <div className="container mx-auto px-4 py-3 sm:py-4">
+        <div className="w-[90vw] mx-auto px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
               <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-red-500 shrink-0" />
@@ -197,7 +209,7 @@ function AdminContent() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
+      <main className="w-[90vw] mx-auto px-4 py-6 space-y-6 ">
         {/* Actions Grid - 1 col on mobile, 2 on tablet+ */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="border-red-100 dark:border-red-900/50 hover:shadow-md transition-shadow gap-0">
@@ -253,12 +265,25 @@ function AdminContent() {
               </h2>
               <div className="relative w-full sm:w-72 lg:w-96">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
                 <Input
                   placeholder={`Buscar ${selectedTab}...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-9 sm:h-10 text-sm bg-card"
+                  // Añadimos pr-9 para que el texto no se solape con el botón de borrar
+                  className="pl-9 pr-9 h-9 sm:h-10 text-sm bg-card"
                 />
+
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    type="button"
+                    aria-label="Limpiar búsqueda"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
             <Badge
@@ -272,7 +297,7 @@ function AdminContent() {
 
           <Tabs
             value={selectedTab}
-            onValueChange={setSelectedTab}
+            onValueChange={handleSetSelectedTab}
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2 h-11 p-1 bg-muted/50">
@@ -289,7 +314,13 @@ function AdminContent() {
             </TabsContent>
 
             <TabsContent value="users" className="mt-4 outline-none">
-              <AdminUsersTable searchTerm={searchTerm} allUsers={allUsers} />
+              <AdminUsersTable
+                searchTerm={searchTerm}
+                allUsers={allUsers}
+                handleChangeSelectedTabAndSearch={
+                  handleChangeSelectedTabAndSearch
+                }
+              />
             </TabsContent>
           </Tabs>
         </section>
@@ -340,8 +371,7 @@ function AdminContent() {
             </Button>
             <Button
               onClick={handleRunDeceaseCheck}
-              //   disabled={isProcessing}
-              disabled
+              disabled={isProcessing}
               className="w-full sm:w-auto"
             >
               {isProcessing ? (

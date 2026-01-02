@@ -67,7 +67,11 @@ export const AdminGroupsTable = ({
   };
 
   const sortedGroups = [...(allGroups || [])]
-    .filter((u) => u.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(
+      (u) =>
+        u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.id.includes(searchTerm)
+    )
     .sort((a, b) => {
       const { key, direction } = sortConfig;
       let comparison = 0;

@@ -73,6 +73,7 @@ export async function createUser(authUser: User) {
       groups: [],
       role: "user",
       status: "active",
+      tier: "free",
     };
 
     await setDoc(userRef, newUser);
