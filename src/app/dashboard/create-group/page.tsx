@@ -15,10 +15,12 @@ import { createGroup } from "@/lib/firestore/groups";
 import { useAuth } from "@/providers/auth-provider";
 import { useSidebar } from "@/providers/sidebar-provider";
 import { ArrowLeft, ArrowRight, Settings, Users } from "lucide-react";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function CreateGroup() {
+  const router = useRouter();
   const { currentUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [groupData, setGroupData] = useState({
@@ -30,17 +32,21 @@ export default function CreateGroup() {
   const { reloadGroups } = useSidebar();
 
   const handleNext = async () => {
-    if (currentStep < 2) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      const { groupId } = await createGroup({
-        ...groupData,
-        creatorId: currentUser!.uid,
-        deadline: new Date(groupData.deadline),
-        settings: { maxBets: groupData.maxBets },
-      });
-      reloadGroups();
-      redirect(`/dashboard/${groupId}`);
+    try {
+      if (currentStep < 2) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        const { groupId } = await createGroup({
+          ...groupData,
+          creatorId: currentUser!.uid,
+          deadline: new Date(groupData.deadline),
+          settings: { maxBets: groupData.maxBets },
+        });
+        reloadGroups();
+        router.push(`/dashboard/${groupId}`);
+      }
+    } catch (error) {
+      toast.error(`${error}`);
     }
   };
 

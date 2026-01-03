@@ -38,6 +38,7 @@ import {
 import { generateInvite } from "@/lib/firestore/invites";
 import { GroupDoc, UpdateGroupDoc } from "@/models/Group";
 import { useAuth } from "@/providers/auth-provider";
+import { useSidebar } from "@/providers/sidebar-provider";
 import {
   Ban,
   Crown,
@@ -67,6 +68,7 @@ export default function GroupManagementModal({
   reloadGroupData: () => void;
 }) {
   const { currentUser } = useAuth();
+  const { reloadGroups } = useSidebar();
 
   const [activeTab, setActiveTab] = useState<
     "invite" | "settings" | "members" | "danger" | "lists"
@@ -98,9 +100,10 @@ export default function GroupManagementModal({
   };
 
   const handleConfirmDeleteGroup = async () => {
-    await deleteGroup(group.id);
+    await deleteGroup(group.id, currentUser.uid);
     setDeleteDialogOpen(false);
     reloadGroupData();
+    reloadGroups();
     onClose();
   };
 

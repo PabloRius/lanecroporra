@@ -9,6 +9,7 @@ export interface UserDoc {
   status: "active" | "inactive" | "banned";
   tier?: "free" | "pro";
   victories?: number;
+  createdGroupsCount?: number;
 }
 
 export interface UserStats {

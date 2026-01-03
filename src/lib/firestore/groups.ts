@@ -9,12 +9,14 @@ import { InviteDoc } from "@/models/Invite";
 import { ListDoc } from "@/models/List";
 import { UserDoc } from "@/models/User";
 import {
+  arrayRemove,
   arrayUnion,
   collection,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
+  increment,
   setDoc,
   Timestamp,
   updateDoc,
@@ -108,6 +110,27 @@ export async function getGroupById(
 export async function createGroup(
   groupData: Omit<GroupDoc, "id" | "status" | "activityLog" | "createdAt">
 ): Promise<{ groupId: string }> {
+  const userRef = doc(db, "users", groupData.creatorId);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) {
+    throw new Error("El usuario no existe");
+  }
+
+  const userData = userSnap.data() as UserDoc;
+  const groupsCreated = userData.groups.length;
+  const userTier = userData.tier || "free";
+
+  const limit = userTier === "pro" ? 10 : 1;
+
+  if (groupsCreated >= limit) {
+    throw new Error(
+      `Límite alcanzado. Tu plan (${userTier}) permite un máximo de ${limit} ${
+        limit === 1 ? "grupo" : "grupos"
+      }.`
+    );
+  }
+
   const batch = writeBatch(db);
 
   const groupRef = doc(collection(db, "groups"));
@@ -146,7 +169,6 @@ export async function createGroup(
     memberDoc
   );
 
-  const userRef = doc(db, "users", groupData.creatorId);
   batch.update(userRef, {
     groups: arrayUnion(groupId),
   });
@@ -244,25 +266,30 @@ export async function joinGroup(userId: string, tokenId: string) {
 }
 
 export async function leaveGroup(userId: string, groupId: string) {
-  const userRef = doc(db, "users", userId);
-  const userSnap = await getDoc(userRef);
-  const userData = userSnap.data() as UserDoc;
-  if (!userSnap.exists() || !userData) {
-    throw new Error("User not found!");
+  const groupRef = doc(db, "groups", groupId);
+  const groupSnap = await getDoc(groupRef);
+
+  if (!groupSnap.exists()) throw new Error("El grupo no existe");
+
+  const groupData = groupSnap.data() as GroupDoc;
+
+  if (groupData.creatorId === userId) {
+    throw new Error(
+      "Como creador, no puedes abandonar el grupo. Debes eliminarlo si quieres salir."
+    );
   }
 
+  const batch = writeBatch(db);
+
   const memberRef = doc(db, "groups", groupId, "members", userId);
-  const groupRef = doc(db, "groups", groupId);
+  batch.delete(memberRef);
 
-  const now = Timestamp.now();
-
-  await updateDoc(groupRef, {
-    activityLog: arrayUnion({
-      message: `${userData.displayName} abandonó el grupo`,
-      timestamp: now,
-    }),
+  const userRef = doc(db, "users", userId);
+  batch.update(userRef, {
+    groups: arrayRemove(groupId),
   });
-  await deleteDoc(memberRef);
+
+  await batch.commit();
 }
 
 export async function updateGroup(
@@ -280,23 +307,39 @@ export async function updateGroup(
   });
 }
 
-export async function deleteGroup(groupId: string) {
+export async function deleteGroup(groupId: string, userId: string) {
   const groupRef = doc(db, "groups", groupId);
   const groupSnap = await getDoc(groupRef);
+
+  if (!groupSnap.exists()) throw new Error("El grupo no existe");
+
   const groupData = groupSnap.data() as GroupDoc;
+
+  if (groupData.creatorId !== userId) {
+    throw new Error("No tienes permisos para eliminar este grupo.");
+  }
+
+  const batch = writeBatch(db);
 
   if (groupData.inviteLink) {
     const inviteRef = doc(db, "invites", groupData.inviteLink);
-    await deleteDoc(inviteRef);
+    batch.delete(inviteRef);
   }
 
-  await deleteDoc(groupRef);
+  batch.delete(groupRef);
+
+  const userRef = doc(db, "users", userId);
+  batch.update(userRef, {
+    createdGroupsCount: increment(-1),
+  });
 
   const membersColRef = collection(db, "groups", groupId, "members");
   const membersSnap = await getDocs(membersColRef);
   for (const member of membersSnap.docs) {
-    await deleteDoc(member.ref);
+    batch.delete(member.ref);
   }
+
+  batch.commit();
 }
 
 const normalize = (s: string) =>
@@ -376,7 +419,15 @@ export async function promoteToAdmin(groupId: string, memberId: string) {
 export async function closeGroupLists(groupId: string) {
   try {
     const groupRef = doc(db, "groups", groupId);
-    await updateDoc(groupRef, { status: "activo" });
+    const newLogEntry = {
+      message: `Listas cerradas oficialmente. El juego ha comenzado.`,
+      timestamp: Timestamp.now(),
+    };
+    await updateDoc(groupRef, {
+      status: "activo",
+      activityLog: arrayUnion(newLogEntry),
+    });
+
     return true;
   } catch (error) {
     console.error("Error closing group:", error);

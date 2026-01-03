@@ -2,6 +2,16 @@
 
 import GroupManagementModal from "@/components/group-management-modal";
 import { LeaderBoardCard } from "@/components/leaderboard-card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,7 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { getGroupById } from "@/lib/firestore/groups";
+import { getGroupById, leaveGroup } from "@/lib/firestore/groups";
 import { getUserById, resolveUserId } from "@/lib/firestore/users";
 import { timeAgo } from "@/lib/time-ago";
 import { getTimeLeft } from "@/lib/time-left";
@@ -40,6 +50,7 @@ import {
   EyeOff,
   Loader2,
   Lock,
+  LogOut,
   Menu,
   Settings,
   Timer,
@@ -47,7 +58,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 export default function GroupPage({
@@ -55,6 +66,7 @@ export default function GroupPage({
 }: {
   params: Promise<{ groupId: string }>;
 }) {
+  const router = useRouter();
   const { currentUser, loading } = useAuth();
   const [user, setUser] = useState<UserDoc | undefined | null>(undefined);
 
@@ -115,6 +127,11 @@ export default function GroupPage({
     }
   }, [currentUser, loading]);
 
+  useEffect(() => {
+    console.log(group);
+    if (group === null) router.push("/dashboard");
+  }, [group, router]);
+
   const handleViewMemberList = async (playerUid: string) => {
     if (!group || !group.members) return;
     const memberName = await resolveUserId(playerUid);
@@ -122,6 +139,22 @@ export default function GroupPage({
     if (!memberList || !memberName) return;
     setSelectedMemberList({ name: memberName, list: memberList });
     setShowMemberListModal(true);
+  };
+
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+
+  const handleLeaveGroup = async () => {
+    if (!group || !user) return;
+    setIsLeaving(true);
+    try {
+      await leaveGroup(user.uid, group.id);
+      router.push("/dashboard");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLeaving(false);
+    }
   };
 
   if (loading || user === undefined || group === undefined) {
@@ -137,7 +170,7 @@ export default function GroupPage({
   }
 
   if (!group || !group.members) {
-    redirect("/dashboard");
+    return;
   }
 
   const isAdmin = group?.members
@@ -156,6 +189,16 @@ export default function GroupPage({
             <h2 className="font-semibold truncate text-center flex-1">
               {group.name}
             </h2>
+            {group.creatorId !== user.uid && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLeaveDialog(true)}
+              >
+                <LogOut className="w-4 h-4 text-red-500" />
+              </Button>
+            )}
+
             {isAdmin && (
               <Button
                 variant="ghost"
@@ -258,17 +301,32 @@ export default function GroupPage({
                 </div>
                 <p className="text-muted-foreground">{group.description}</p>
               </div>
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowGroupManagement(true)}
-                  className="bg-transparent"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Gestionar
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {/* Botón Salir (Solo para no-creadores) */}
+                {group.creatorId !== user.uid && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowLeaveDialog(true)}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Abandonar
+                  </Button>
+                )}
+
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowGroupManagement(true)}
+                    className="bg-transparent"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Gestionar
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -637,6 +695,32 @@ export default function GroupPage({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Estás seguro de que quieres salir?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Perderás tu lista de famosos y tu posición en la clasificación de
+              &quot;{group.name}&quot;. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLeaving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleLeaveGroup();
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={isLeaving}
+            >
+              {isLeaving ? "Saliendo..." : "Sí, abandonar grupo"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

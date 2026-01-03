@@ -381,12 +381,12 @@ export default function EditListPage({
                     <p>No seleccionaste a nadie.</p>
                   </div>
                 ) : (
-                  <div className="h-[50vh] flex overflow-y-scroll">
-                    <div className="space-y-3 max-w-full">
+                  <div className="h-[50vh] flex overflow-y-auto">
+                    <div className="space-y-3 w-full">
                       {currentList.bets.map((bet, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-4 rounded-xl border bg-card transition-all"
+                          className="flex w-full items-center justify-between p-4 rounded-xl border bg-card transition-all"
                         >
                           <div className="flex items-center gap-4 min-w-0">
                             <span className="text-sm font-black text-muted-foreground/50 w-4">
