@@ -20,7 +20,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         `Has sido invitado a participar en el grupo ${group.name}. ¡Prepara tu lista de famosos!`,
       openGraph: {
         title: `Invitación: ${group.name}`,
-        description: `Compite en La Necroporra con el grupo ${group.name}.`,
+        description:
+          group.description ||
+          `Has sido invitado a participar en el grupo ${group.name}. ¡Prepara tu lista de famosos!`,
         images: ["/logo.png"],
       },
     };
