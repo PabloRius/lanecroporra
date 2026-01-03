@@ -68,3 +68,31 @@ export async function resolveInviteGroup(
   const groupData = await getGroupById(inviteData.groupId, userId);
   return groupData;
 }
+
+export async function safeResolveInviteGroup(token: string) {
+  try {
+    const inviteRef = doc(db, "invites", token);
+    const inviteSnap = await getDoc(inviteRef);
+
+    if (!inviteSnap.exists()) return null;
+
+    const inviteData = inviteSnap.data();
+    const { groupId } = inviteData;
+
+    const groupSnap = await getDoc(doc(db, "groups", groupId));
+
+    if (!groupSnap.exists()) return null;
+
+    const data = groupSnap.data();
+
+    // Importante: No devolvemos ni Timestamps ni referencias, solo strings/numbers
+    return {
+      id: groupSnap.id,
+      name: data.name || "Grupo sin nombre",
+      description: data.description || "", // corregido typo
+    };
+  } catch (error) {
+    console.error("Error en safeResolveInviteGroup:", error);
+    return null;
+  }
+}
