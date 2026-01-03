@@ -1,4 +1,4 @@
-import { UserDoc } from "@/models/User";
+import { UserDoc, UserStats } from "@/models/User";
 import { User } from "firebase/auth";
 import {
   arrayRemove,
@@ -13,6 +13,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/clientApp";
+import { getGroupById, getUserList } from "./groups";
 
 export async function getAllUsers(): Promise<UserDoc[] | null> {
   try {
@@ -68,6 +69,7 @@ export async function createUser(authUser: User) {
     const newUser: UserDoc = {
       uid: authUser.uid,
       email: authUser.email!,
+      photoURL: authUser.photoURL || undefined,
       displayName: authUser.displayName || authUser.email!.split("@")[0],
       createdAt: new Date(),
       groups: [],
@@ -97,4 +99,30 @@ export async function removeGroupFromUser(userId: string, groupId: string) {
   await updateDoc(userRef, {
     groups: arrayRemove(groupId),
   });
+}
+
+export async function getUserStats(userId: string): Promise<UserStats | null> {
+  const user = await getUserById(userId);
+  if (!user) return null;
+  let totalPoints: number = 0;
+  let activeGroups = 0;
+  let finishedGroups = 0;
+  await Promise.all(
+    user.groups.map(async (group) => {
+      const groupData = await getGroupById(group);
+      const groupList = await getUserList(group, userId);
+      if (groupList) totalPoints += groupList.points;
+      if (groupData && groupList?.bets) {
+        if (groupData.status === "activo" || groupData.status === "draft")
+          activeGroups += 1;
+        if (groupData.status === "finalizado") finishedGroups += 1;
+      }
+    })
+  );
+  console.log(activeGroups);
+  return {
+    totalPoints,
+    victories: user.victories || 0,
+    games: { active: activeGroups, finished: finishedGroups },
+  };
 }

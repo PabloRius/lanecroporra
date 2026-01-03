@@ -14,14 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import {
   Table,
   TableBody,
@@ -42,13 +35,12 @@ import {
   Ban,
   Calendar,
   Eye,
-  Filter,
   Shield,
   Trash2,
   UserIcon,
-  X,
 } from "lucide-react";
 import { useState } from "react";
+import { FilterHeader } from "./filter-header";
 
 export const AdminUsersTable = ({
   searchTerm,
@@ -134,65 +126,12 @@ export const AdminUsersTable = ({
   });
 
   const formatDate = (date: Date) => {
-    if (!date) return "N/A";
-    const d = date instanceof Date ? date : new Date(date);
-    return new Intl.DateTimeFormat("es-ES", { dateStyle: "short" }).format(d);
+    return new Date(date).toLocaleDateString("es-ES", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
-
-  const FilterHeader = ({
-    label,
-    options,
-    current,
-    setter,
-  }: {
-    label: string;
-    options: string[];
-    current: string[];
-    setter: (val: string[]) => void;
-  }) => (
-    <div className="flex items-center gap-1">
-      <span>{label}</span>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-8 w-8 p-0 ${
-              current.length > 0 ? "text-primary bg-primary/10" : ""
-            }`}
-          >
-            <Filter className="h-3.5 w-3.5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
-          <DropdownMenuLabel>Filtrar {label}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {options.map((opt: string) => (
-            <DropdownMenuCheckboxItem
-              key={opt}
-              checked={current.includes(opt)}
-              onCheckedChange={() => toggleFilter(current, opt, setter)}
-              className="capitalize"
-            >
-              {opt}
-            </DropdownMenuCheckboxItem>
-          ))}
-          {current.length > 0 && (
-            <>
-              <DropdownMenuSeparator />
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-xs h-8 px-2 text-red-500"
-                onClick={() => setter([])}
-              >
-                <X className="mr-2 h-3 w-3" /> Limpiar
-              </Button>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
 
   return (
     <>
@@ -238,6 +177,7 @@ export const AdminUsersTable = ({
                           options={["active", "banned"]}
                           current={statusFilter}
                           setter={setStatusFilter}
+                          toggleFilter={toggleFilter}
                         />
                       </div>
                     </TableHead>
@@ -248,6 +188,7 @@ export const AdminUsersTable = ({
                           options={["user", "admin", "creator"]}
                           current={roleFilter}
                           setter={setRoleFilter}
+                          toggleFilter={toggleFilter}
                         />
                       </div>
                     </TableHead>
@@ -258,6 +199,7 @@ export const AdminUsersTable = ({
                           options={["free", "pro", "premium"]}
                           current={tierFilter}
                           setter={setTierFilter}
+                          toggleFilter={toggleFilter}
                         />
                       </div>
                     </TableHead>
@@ -377,7 +319,7 @@ export const AdminUsersTable = ({
         open={!!selectedUser}
         onOpenChange={(open) => !open && setSelectedUser(null)}
       >
-        <DialogContent className="max-w-md sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <UserIcon className="h-5 w-5 text-primary" />

@@ -49,7 +49,9 @@ export async function getAllGroups(): Promise<GroupDoc[] | null> {
         return {
           ...data,
           id: doc.id,
-          // createdAt: (data.createdAt as Timestamp).toDate() || new Date(),
+          createdAt: data.createdAt
+            ? (data.createdAt as Timestamp).toDate()
+            : null,
           deadline: (data.deadline as Timestamp).toDate() || new Date(),
           members,
         } as unknown as GroupDoc;
@@ -372,4 +374,14 @@ export async function closeGroupLists(groupId: string) {
     console.error("Error closing group:", error);
   }
   return false;
+}
+
+export async function getUserList(groupId: string, userId: string) {
+  const memberDoc = doc(db, "groups", groupId, "members", userId);
+  const memberSnap = await getDoc(memberDoc);
+  if (!memberSnap.exists()) return null;
+
+  const memberData = memberSnap.data() as MemberDoc;
+
+  return memberData.list;
 }

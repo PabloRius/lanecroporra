@@ -1,7 +1,6 @@
 "use client";
 
-import { useAuth } from "@/providers/auth-provider";
-
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,70 +10,72 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { getUserById } from "@/lib/firestore/users";
-import { UserDoc } from "@/models/User";
+import { getUserById, getUserStats } from "@/lib/firestore/users";
+import { UserDoc, UserStats } from "@/models/User";
+import { useAuth } from "@/providers/auth-provider";
 import {
   ArrowLeft,
   Award,
   Calendar,
+  CheckCircle2,
   Loader2,
+  ShieldCheck,
   Target,
   TrendingUp,
   Trophy,
   Users,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const userData = {
-  avatar: "/diverse-user-avatars.png",
-  stats: {
-    totalPoints: 1250,
-    gamesWon: 3,
-    gamesPlayed: 8,
-    friendsAdded: 12,
-    currentRank: 2,
-    bestStreak: 5,
-    averagePoints: 156,
-    successRate: 38,
-  },
+// Datos estáticos para visualización (puedes mover esto a un archivo de constantes)
+const mockData = {
   achievements: [
     {
       name: "Primera Victoria",
       description: "Ganaste tu primera necroporra",
       earned: true,
+      icon: Trophy,
     },
     {
       name: "Racha Perfecta",
       description: "5 aciertos consecutivos",
       earned: true,
+      icon: Zap,
     },
-    { name: "Social", description: "Añadiste 10+ amigos", earned: true },
-    { name: "Veterano", description: "Jugaste 10+ partidas", earned: false },
-    { name: "Maestro", description: "Ganaste 5+ necroportas", earned: false },
+    {
+      name: "Social",
+      description: "Añadiste 10+ amigos",
+      earned: true,
+      icon: Users,
+    },
+    {
+      name: "Veterano",
+      description: "Jugaste 10+ partidas",
+      earned: false,
+      icon: Target,
+    },
   ],
   recentActivity: [
     {
       action: "Ganaste la Necroporra de Navidad 2024",
       date: "Hace 2 días",
       points: 340,
-    },
-    {
-      action: "Te uniste al grupo 'Amigos del Barrio'",
-      date: "Hace 1 semana",
-      points: 0,
+      type: "win",
     },
     {
       action: "Acertaste: Morgan Freeman",
       date: "Hace 2 semanas",
       points: 85,
+      type: "hit",
     },
     {
-      action: "Creaste la lista 'Famosos 2024'",
-      date: "Hace 3 semanas",
+      action: "Te uniste al grupo 'Amigos del Barrio'",
+      date: "Hace 1 mes",
       points: 0,
+      type: "join",
     },
   ],
 };
@@ -82,17 +83,26 @@ const userData = {
 export default function ProfilePage() {
   const { currentUser, loading } = useAuth();
   const [user, setUser] = useState<UserDoc | undefined | null>(undefined);
+  const [userStats, setUserStats] = useState<UserStats | undefined | null>(
+    undefined
+  );
 
   useEffect(() => {
     if (currentUser && !loading) {
       const fetchUser = async () => {
-        const userData = await getUserById(currentUser.uid);
-        if (!userData) {
-          console.error("User not found");
+        try {
+          const userData = await getUserById(currentUser.uid);
+          if (!userData) {
+            setUser(null);
+            return;
+          }
+          setUser(userData);
+          const stats = await getUserStats(userData.uid);
+          setUserStats(stats || null);
+        } catch (error) {
+          console.error("Error fetching profile:", error);
           setUser(null);
-          return;
         }
-        setUser(userData);
       };
       fetchUser();
     }
@@ -100,233 +110,294 @@ export default function ProfilePage() {
 
   if (loading || user === undefined) {
     return (
-      <div className="flex flex-1 w-full items-center justify-center">
-        <Loader2 size={32} className="animate-spin" />
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 size={40} className="animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground animate-pulse">
+            Cargando perfil...
+          </p>
+        </div>
       </div>
     );
   }
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold font-serif">Mi Perfil</h1>
-              <p className="text-muted-foreground">Estadísticas y logros</p>
+    <div className="min-h-screen max-w-screen bg-slate-50/50 dark:bg-background pb-12">
+      {/* Header Sticky */}
+      <div className="sticky top-0 z-30 w-full border-b bg-background/80 backdrop-blur-md">
+        <div className="container mx-auto px-4 py-4 max-w-6xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard">
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Mi Perfil</h1>
+                <p className="hidden sm:block text-xs text-muted-foreground">
+                  Gestiona tu identidad y revisa tus logros
+                </p>
+              </div>
             </div>
+            {user.role === "admin" && (
+              <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors">
+                <ShieldCheck className="w-3 h-3 mr-1" /> Admin
+              </Badge>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="grid gap-8 md:grid-cols-3">
-          {/* Profile Info */}
-          <div className="md:col-span-1">
-            <Card>
-              <CardHeader className="text-center">
-                <div className="mx-auto h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <Users className="h-12 w-12 text-muted-foreground" />
+      <div className="mx-auto px-4 py-6 sm:py-8 max-w-screen lg:max-w-6xl">
+        <div className="w-full grid gap-6 lg:grid-cols-12">
+          {/* Sidebar: Profile Info (4 cols) */}
+          <div className="lg:col-span-4 space-y-6">
+            <Card className="border-none shadow-lg flex flex-col max-w-full">
+              <div className="h-24 bg-gradient-to-r from-primary/20 via-primary/10 to-background" />
+              <CardHeader className="relative pt-0 flex flex-col items-center text-center">
+                <div className="-mt-12 mb-4">
+                  <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
+                    <AvatarImage
+                      src={user.photoURL}
+                      alt={user.displayName}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-bold">
+                      {user.displayName?.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
-                <CardTitle className="font-serif">{user.displayName}</CardTitle>
-                <CardDescription>{user.email}</CardDescription>
-                <Badge variant="secondary" className="mt-2">
-                  Miembro desde{" "}
-                  {user.createdAt.toLocaleDateString("es-ES", {
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </Badge>
+                <CardTitle className="text-2xl font-bold tracking-tight">
+                  {user.displayName}
+                </CardTitle>
+                <CardDescription className="text-sm font-medium">
+                  {user.email}
+                </CardDescription>
+
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  <Badge
+                    variant="secondary"
+                    className="bg-muted/50 text-[10px] uppercase tracking-wider py-1"
+                  >
+                    <Calendar className="w-3 h-3 mr-1" /> Desde{" "}
+                    {new Intl.DateTimeFormat("es-ES", {
+                      month: "short",
+                      year: "numeric",
+                    }).format(user.createdAt)}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] uppercase tracking-wider py-1"
+                  >
+                    {user.tier || "Free Member"}
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">
-                    Puntos Totales
-                  </span>
-                  <span className="font-bold text-lg">
-                    {userData.stats.totalPoints.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">
-                    Ranking Actual
-                  </span>
-                  <Badge variant="outline">#{userData.stats.currentRank}</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">
-                    Tasa de Éxito
-                  </span>
-                  <span className="font-semibold">
-                    {userData.stats.successRate}%
-                  </span>
-                </div>
-                <Progress value={userData.stats.successRate} className="h-2" />
+            </Card>
+
+            {/* Quick Actions (Desktop Only) */}
+            <Card className="hidden lg:block border-muted/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  Configuración
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-xs font-semibold h-9"
+                  disabled
+                >
+                  Editar Perfil
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-xs font-semibold h-9"
+                  disabled
+                >
+                  Privacidad
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-xs font-semibold h-9 text-red-500 hover:text-red-600 hover:bg-red-50"
+                >
+                  Cerrar Sesión
+                </Button>
               </CardContent>
             </Card>
           </div>
 
-          {/* Stats and Activity */}
-          <div className="md:col-span-2 space-y-8">
+          {/* Main Content: Stats and Activity (8 cols) */}
+          <div className="lg:col-span-8 space-y-6">
             {/* Stats Grid */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {userData.stats.gamesWon}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Victorias</p>
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+              {[
+                {
+                  label: "Victorias",
+                  val: userStats?.victories,
+                  icon: Trophy,
+                  color:
+                    "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-500",
+                },
+                {
+                  label: "En Curso",
+                  val: userStats?.games?.active,
+                  icon: Target,
+                  color:
+                    "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-500",
+                },
+                {
+                  label: "Finalizadas",
+                  val: userStats?.games?.finished,
+                  icon: CheckCircle2,
+                  color:
+                    "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+                },
+                {
+                  label: "Puntos",
+                  val: userStats?.totalPoints,
+                  icon: Zap,
+                  color:
+                    "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-500",
+                },
+              ].map((stat, i) => (
+                <Card
+                  key={i}
+                  className="border-none shadow-md hover:shadow-lg transition-shadow bg-card/50"
+                >
+                  <CardContent className="p-4 sm:p-6 text-center space-y-2">
+                    <div
+                      className={`mx-auto p-2.5 rounded-xl w-fit ${stat.color}`}
+                    >
+                      <stat.icon className="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-blue-500" />
                     <div>
-                      <p className="text-2xl font-bold">
-                        {userData.stats.gamesPlayed}
+                      <p className="text-xl sm:text-2xl font-black tracking-tighter">
+                        {userStats === undefined ? (
+                          <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                        ) : (
+                          (stat.val || 0).toLocaleString()
+                        )}
                       </p>
-                      <p className="text-sm text-muted-foreground">Partidas</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {userData.stats.friendsAdded}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Amigos</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-purple-500" />
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {userData.stats.bestStreak}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Mejor Racha
+                      <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest leading-none mt-1">
+                        {stat.label}
                       </p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
-            {/* Achievements */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-serif">
-                  <Award className="h-5 w-5" />
-                  Logros
-                </CardTitle>
-                <CardDescription>
-                  Desbloquea logros jugando y mejorando tus estadísticas
-                </CardDescription>
+            {/* Achievements Section */}
+            <Card className="border-muted/60">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                      <Award className="h-5 w-5 text-primary" /> Logros
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Tu progreso en la competición
+                    </CardDescription>
+                  </div>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {userData.achievements.map((achievement, index) => (
+                  {/* {mockData.achievements.map((achievement, index) => (
                     <div
                       key={index}
-                      className={`flex items-center gap-3 p-3 rounded-lg border ${
+                      className={`flex items-center gap-4 p-3 rounded-xl border transition-all ${
                         achievement.earned
-                          ? "bg-muted/50 border-green-200 dark:border-green-800"
-                          : "bg-muted/20 border-muted opacity-60"
+                          ? "bg-primary/[0.03] border-primary/20"
+                          : "bg-muted/10 border-transparent opacity-60 grayscale"
                       }`}
                     >
                       <div
-                        className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                        className={`p-2 rounded-lg ${
                           achievement.earned
-                            ? "bg-green-100 dark:bg-green-900"
-                            : "bg-muted"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
                         }`}
                       >
-                        <Award
-                          className={`h-5 w-5 ${
-                            achievement.earned
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-muted-foreground"
-                          }`}
-                        />
+                        <achievement.icon className="h-5 w-5" />
                       </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm truncate">
                           {achievement.name}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-[11px] text-muted-foreground leading-none mt-1">
                           {achievement.description}
                         </p>
                       </div>
                       {achievement.earned && (
-                        <Badge variant="secondary" className="text-xs">
-                          ✓
-                        </Badge>
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                       )}
                     </div>
-                  ))}
+                  ))} */}
+                  Los logros no están implementados todavía
                 </div>
               </CardContent>
             </Card>
 
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-serif">
-                  <Calendar className="h-5 w-5" />
-                  Actividad Reciente
+            {/* Activity Feed */}
+            {/* <Card className="border-muted/60">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" /> Historial
+                  Reciente
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {userData.recentActivity.map((activity, index) => (
+              <CardContent className="p-0">
+                <div className="divide-y border-t">
+                  {mockData.recentActivity.map((activity, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-4 p-3 rounded-lg bg-muted/30"
+                      className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors group"
                     >
-                      <div className="h-2 w-2 rounded-full bg-foreground flex-shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{activity.action}</p>
-                        <p className="text-xs text-muted-foreground">
+                      <div
+                        className={`h-2 w-2 rounded-full shrink-0 ${
+                          activity.type === "win"
+                            ? "bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]"
+                            : activity.type === "hit"
+                            ? "bg-green-500"
+                            : "bg-blue-500"
+                        }`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
+                          {activity.action}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
                           {activity.date}
                         </p>
                       </div>
                       {activity.points > 0 && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge
+                          variant="outline"
+                          className="bg-green-50 dark:bg-green-950/20 text-green-600 border-green-200 ml-auto h-6"
+                        >
                           +{activity.points} pts
                         </Badge>
                       )}
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
                     </div>
                   ))}
                 </div>
               </CardContent>
-            </Card>
+              <div className="p-3 bg-muted/20 text-center border-t">
+                <Button
+                  variant="link"
+                  className="text-xs font-bold h-auto p-0 text-muted-foreground"
+                >
+                  Ver todo el historial
+                </Button>
+              </div>
+            </Card> */}
           </div>
         </div>
       </div>
