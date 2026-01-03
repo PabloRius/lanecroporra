@@ -7,7 +7,7 @@ import { Menu, Users } from "lucide-react";
 export default function DashboardPage() {
   const { setOpen } = useSidebar();
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex h-full flex-col">
       <div className="lg:hidden p-4 border-b border-border bg-card">
         <Button
           variant="ghost"

@@ -16,8 +16,17 @@ import { Button } from "./ui/button";
 export function AuthCard() {
   const handleSignIn = async () => {
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    await createUser(result.user);
+
+    provider.setCustomParameters({
+      prompt: "select_account",
+    });
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      await createUser(result.user);
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
+    }
   };
   return (
     <Card className="border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">

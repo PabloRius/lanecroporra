@@ -10,9 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { auth } from "@/lib/firebase/clientApp";
 import { getUserById, getUserStats } from "@/lib/firestore/users";
 import { UserDoc, UserStats } from "@/models/User";
 import { useAuth } from "@/providers/auth-provider";
+import { signOut } from "firebase/auth";
 import {
   ArrowLeft,
   Award,
@@ -23,69 +25,25 @@ import {
   Target,
   TrendingUp,
   Trophy,
-  Users,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// Datos estáticos para visualización (puedes mover esto a un archivo de constantes)
-const mockData = {
-  achievements: [
-    {
-      name: "Primera Victoria",
-      description: "Ganaste tu primera necroporra",
-      earned: true,
-      icon: Trophy,
-    },
-    {
-      name: "Racha Perfecta",
-      description: "5 aciertos consecutivos",
-      earned: true,
-      icon: Zap,
-    },
-    {
-      name: "Social",
-      description: "Añadiste 10+ amigos",
-      earned: true,
-      icon: Users,
-    },
-    {
-      name: "Veterano",
-      description: "Jugaste 10+ partidas",
-      earned: false,
-      icon: Target,
-    },
-  ],
-  recentActivity: [
-    {
-      action: "Ganaste la Necroporra de Navidad 2024",
-      date: "Hace 2 días",
-      points: 340,
-      type: "win",
-    },
-    {
-      action: "Acertaste: Morgan Freeman",
-      date: "Hace 2 semanas",
-      points: 85,
-      type: "hit",
-    },
-    {
-      action: "Te uniste al grupo 'Amigos del Barrio'",
-      date: "Hace 1 mes",
-      points: 0,
-      type: "join",
-    },
-  ],
-};
-
 export default function ProfilePage() {
+  const router = useRouter();
   const { currentUser, loading } = useAuth();
   const [user, setUser] = useState<UserDoc | undefined | null>(undefined);
   const [userStats, setUserStats] = useState<UserStats | undefined | null>(
     undefined
   );
+
+  useEffect(() => {
+    if (!loading && !currentUser) {
+      router.push("/login");
+    }
+  }, [currentUser, loading, router]);
 
   useEffect(() => {
     if (currentUser && !loading) {
@@ -108,7 +66,7 @@ export default function ProfilePage() {
     }
   }, [currentUser, loading]);
 
-  if (loading || user === undefined) {
+  if (loading || (currentUser && user === undefined)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -121,7 +79,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) redirect("/login");
+  if (!currentUser || !user) return;
 
   return (
     <div className="min-h-screen max-w-screen bg-slate-50/50 dark:bg-background pb-12">
@@ -223,6 +181,10 @@ export default function ProfilePage() {
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-xs font-semibold h-9 text-red-500 hover:text-red-600 hover:bg-red-50"
+                  onClick={async () => {
+                    await signOut(auth);
+                    router.push("/login");
+                  }}
                 >
                   Cerrar Sesión
                 </Button>
