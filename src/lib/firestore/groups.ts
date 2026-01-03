@@ -323,18 +323,26 @@ export async function setNameStatusAcrossGroup(
     if (!data?.list?.bets?.length) return;
 
     let changed = false;
+    let pointsDelta = 0;
+
     const newBets: BetDoc[] = data.list.bets.map((b) => {
       if (normalize(b.name) === target && b.status !== status) {
         changed = true;
+        pointsDelta += status === "deceased" ? 1 : -1;
         return { ...b, status };
       }
       return b;
     });
 
     if (changed) {
+      const currentPoints = data.list.points || 0;
       updates.push({
         ref: memberSnap.ref,
-        list: { ...data.list, bets: newBets },
+        list: {
+          ...data.list,
+          bets: newBets,
+          points: currentPoints + pointsDelta,
+        },
       });
     }
   });

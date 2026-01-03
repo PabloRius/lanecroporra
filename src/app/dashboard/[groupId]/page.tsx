@@ -18,6 +18,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getGroupById } from "@/lib/firestore/groups";
 import { getUserById, resolveUserId } from "@/lib/firestore/users";
 import { timeAgo } from "@/lib/time-ago";
@@ -30,6 +36,7 @@ import { useSidebar } from "@/providers/sidebar-provider";
 import {
   AlertCircle,
   Calendar,
+  CheckCircle2,
   EyeOff,
   Loader2,
   Lock,
@@ -363,7 +370,10 @@ export default function GroupPage({
                         {/* Warning if any deceased before deadline */}
                         {group.members![user.uid].list.bets.some(
                           (p) => p.status === "deceased"
-                        ) && <AlertCircle className="w-4 h-4 text-red-600" />}
+                        ) &&
+                          group.status === "draft" && (
+                            <AlertCircle className="w-4 h-4 text-red-600" />
+                          )}
                       </Link>
                     </Button>
                   </CardTitle>
@@ -371,40 +381,82 @@ export default function GroupPage({
                     Tu lista de famosos para este grupo
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="overflow-y-scroll max-h-[55vh]">
+                <CardContent className="overflow-y-auto max-h-[55vh]">
                   {group.members![user.uid] &&
-                  Object.keys(group.members![user.uid].list).length > 0 ? (
+                  Object.keys(group.members![user.uid].list.bets).length > 0 ? (
                     <div className="space-y-3 max-w-full">
                       {group.members![user.uid].list.bets.map(
-                        (person, index) => (
-                          <div
-                            key={person.wikidataId}
-                            className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20"
-                          >
-                            {/* Position number */}
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
-                              {index + 1}
-                            </div>
+                        (person, index) => {
+                          // Lógica de iconos de estado
+                          const isDeceased = person.status === "deceased";
+                          const isGroupActive = group.status === "activo";
 
-                            {/* Info */}
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-sm lg:text-base truncate flex items-center gap-2">
-                                {person.name}
-                                {person.status === "deceased" && (
-                                  <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                                )}
-                              </p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                <span className="capitalize">
-                                  {person.snippet} •{" "}
-                                </span>
-                                {person.age !== null
-                                  ? `${person.age} años`
-                                  : "Edad desconocida"}
-                              </p>
+                          return (
+                            <div
+                              key={person.wikidataId}
+                              className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20"
+                            >
+                              {/* Position number */}
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                {index + 1}
+                              </div>
+
+                              {/* Info */}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="font-medium text-sm lg:text-base truncate">
+                                    {person.name}
+                                  </p>
+
+                                  {/* Visualización de estados */}
+                                  {isDeceased && (
+                                    <>
+                                      {isGroupActive ? (
+                                        // Caso: Grupo activo (Punto conseguido)
+                                        <div className="flex items-center gap-1 text-green-600 dark:text-green-500">
+                                          <span className="text-[10px] font-bold hidden sm:inline">
+                                            ACIERTO
+                                          </span>
+                                          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                                        </div>
+                                      ) : (
+                                        // Caso: Grupo en draft/prórroga (Inválido/Alerta)
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="flex items-center gap-1 text-red-600">
+                                                <span className="text-[10px] font-bold hidden sm:inline">
+                                                  INVÁLIDO
+                                                </span>
+                                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p className="text-xs">
+                                                Esta persona ya ha fallecido.
+                                                Debes cambiarla antes del
+                                                inicio.
+                                              </p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+
+                                <p className="text-xs text-muted-foreground truncate">
+                                  <span className="capitalize">
+                                    {person.snippet} •{" "}
+                                  </span>
+                                  {person.age !== null
+                                    ? `${person.age} años`
+                                    : "Edad desconocida"}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        )
+                          );
+                        }
                       )}
                     </div>
                   ) : (
